@@ -1,0 +1,24 @@
+# Local Postgres 16 — same major as Azure Database for PostgreSQL Flexible Server.
+# Azurite (Blob emulator) can be added later; files use local disk when Blob env is unset.
+# Stub for app-web clones. Change user/db names in the product repo if you want; keep the engine.
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - app_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  app_pg:
