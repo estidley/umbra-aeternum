@@ -29,7 +29,7 @@ Full Bragline-style process. Labels are **A1, A2… B1, B2…** — use those ID
 | ID | Slice |
 | --- | --- |
 | **A1** | Identity + core score/logging + Postgres-shaped Prisma |
-| **A2** | Local Docker ≈ Azure |
+| **A2** | Local Docker ≈ Railway |
 | **A3** | Soft-launch flags |
 | **A4** | Theme / shell |
 
@@ -47,7 +47,7 @@ Full Bragline-style process. Labels are **A1, A2… B1, B2…** — use those ID
 | ID | Slice |
 | --- | --- |
 | **C1** | Admin (allowlist) |
-| **C2** | ACS Email + OTP + tickets |
+| **C2** | Resend Email + OTP + tickets |
 | **C3** | IP soft-lock |
 | **C4** | Anti-cheat + Report |
 
@@ -69,8 +69,9 @@ Full Bragline-style process. Labels are **A1, A2… B1, B2…** — use those ID
 | Locked product/tech choices | [`decisions/CURRENT.md`](./decisions/CURRENT.md) + newest [`decisions/CHANGELOG.md`](./decisions/CHANGELOG.md) |
 | How to pick a stack | [`stack/README.md`](./stack/README.md) |
 | **`app-web` full playbook** | [`stack/APP-WEB.md`](./stack/APP-WEB.md) |
-| Local machine ≈ Azure | [`stack/LOCAL-DEV.md`](./stack/LOCAL-DEV.md) |
-| Azure deploy checklist | [`stack/AZURE.md`](./stack/AZURE.md) + [`deploy/README.md`](./deploy/README.md) |
+| Local machine ≈ Railway | [`stack/LOCAL-DEV.md`](./stack/LOCAL-DEV.md) |
+| Railway deploy checklist | [`stack/RAILWAY.md`](./stack/RAILWAY.md) + [`deploy/README.md`](./deploy/README.md) |
+| Azure (superseded) | [`stack/AZURE.md`](./stack/AZURE.md) — not the default |
 | Process-useful connectors | [`connectors/README.md`](./connectors/README.md) — GitHub + Figma only |
 | Cross-AI board | [`HANDOFF.md`](./HANDOFF.md) |
 | Agent rules | [`AGENTS.md`](./AGENTS.md) |
@@ -83,7 +84,7 @@ Full Bragline-style process. Labels are **A1, A2… B1, B2…** — use those ID
 2. **Core data plane first.** Identity, primary log, score formula, Postgres-shaped Prisma. Do not skip to payments, native apps, or polish.
 3. **Cloud Agent for repo code.** Source of truth is GitHub. Use Cloud Agents / PRs for implementation in the product repo — not paste-bin apps.
 4. **Append decisions.** Newest changelog entry at the **top**. Do not rewrite history; supersede with a new entry.
-5. **No secret commits.** `.env` is gitignored. Values live in local `.env` or Azure Container Apps / Key Vault.
+5. **No secret commits.** `.env` is gitignored. Values live in local `.env` or Railway service variables.
 
 ---
 

@@ -26,37 +26,38 @@ Only allowlisted emails can open `/admin`. The panel is documented as operator-s
 
 ### What NOT to do early
 
-Live CS queue, ACS send, Stripe customer portal, Mixpanel.
+Live CS queue, Resend send, Stripe customer portal, Mixpanel.
 
 ---
 
-## C2 — ACS Email + OTP + tickets
+## C2 — Resend Email + OTP + tickets
 
-Transactional mail stays on Azure. Support is **async tickets**, not chat.
+Transactional mail stays on **Resend**. Support is **async tickets**, not chat.
 
 ### Checklist
 
-- [ ] **Azure Communication Services Email** is the only provider. Custom domain. SPF/DKIM/DMARC before prod OTP.
-- [ ] **No** Resend, Amazon SES, Gmail SMTP, or SMS.
+- [ ] **Resend HTTPS API** is the production provider (`RESEND_API_KEY`, `EMAIL_FROM`). Custom domain. SPF/DKIM/DMARC before prod OTP. Sends go to `https://api.resend.com/emails`, not SMTP.
+- [ ] Optional **Gmail SMTP** (`GMAIL_USER`, `GMAIL_APP_PASSWORD`) only when Resend is unset (local / soft-beta bridge). **No SMS.** ACS Email is superseded / unused.
 - [ ] Email OTP / magic-link for verification and step-up. Passkeys wait for D3.
-- [ ] Signed-in ticket form: subject, category (Bug / Account / Billing/Plans / Abuse report / Feature idea / Other), body, Blob attachments.
+- [ ] Signed-in ticket form: subject, category (Bug / Account / Billing/Plans / Abuse report / Feature idea / Other), body, attachments.
 - [ ] Tied to user id + email. Notice: reply-by-email, watch inbox and spam. Public `support@` on the domain.
-- [ ] Admin Customer Support: open/closed queue, ACS replies, stored thread. Not live chat. Not a public ticket board.
-- [ ] Attachments: Azure Blob (separate prefix from photos); local disk when Blob unset.
+- [ ] Admin Customer Support: open/closed queue, Resend replies, stored thread. Not live chat. Not a public ticket board.
+- [ ] Attachments: Railway volume (separate prefix from photos) or local disk when `PHOTO_UPLOAD_DIR` is unset. Azure Blob remains dormant / optional.
 
 ### Done when
 
-OTP can send from ACS on the domain, and a signed-in user can file a ticket Ethan can answer by email from `/admin`.
+OTP can send from Resend on the domain, and a signed-in user can file a ticket Ethan can answer by email from `/admin`.
 
 ### Pitfalls
 
-- Adding “just a Resend fallback.”
+- Treating ACS as the required provider.
 - In-app chat “until email works.”
 - Sending OTP before SPF/DKIM (land in spam, lock people out).
+- Relying on Gmail SMTP in Railway production.
 
 ### What NOT to do early
 
-SMS, passkeys (D3), public coupon codes, shipping the form before ACS credentials exist in Key Vault / ACA secrets.
+SMS, passkeys (D3), public coupon codes, shipping the form before Resend credentials exist in Railway service variables.
 
 ---
 

@@ -1,8 +1,8 @@
 # Deploy & local data plane
 
-Local should look like Azure: **Postgres 16**, same env var names, no secrets in git. This folder does **not** provision Azure.
+Local should look like Railway: **Postgres 16**, same env var names, no secrets in git. This folder does **not** provision Railway.
 
-This template is **process + stubs**. `dev-up` starts Postgres; migrate/seed expect a product `package.json` + Prisma (A1).
+This template is **process + stubs**. `dev-up` starts Postgres; migrate/seed expect a product `package.json` + Prisma (A1). `railway.json` is the prod deploy stub.
 
 ## Local Postgres (required for app-web)
 
@@ -17,9 +17,9 @@ cp .env.example .env
 npm run dev
 ```
 
-`DATABASE_URL` in `.env` must be the Postgres URL (see `.env.example`). In production the app **throws** on a `file:` SQLite URL. Locally it should warn unless you switch Prisma’s provider **and** set an explicit allow flag (fallback only — not Azure).
+`DATABASE_URL` in `.env` must be the Postgres URL (see `.env.example`). In production the app **throws** on a `file:` SQLite URL. Locally it should warn unless you switch Prisma’s provider **and** set an explicit allow flag (fallback only — not Railway).
 
-Azurite (Blob emulator) is **not** in compose. Files use `uploads/` when Blob env vars are unset.
+Files use `uploads/` when `PHOTO_UPLOAD_DIR` is unset. Azure Blob / Azurite is **not** required.
 
 ## Windows (DevWork / PowerShell)
 
@@ -37,18 +37,20 @@ npm run dev
 
 Optional remote QA: Aeternum over Tailscale — see [`../stack/LOCAL-DEV.md`](../stack/LOCAL-DEV.md).
 
-## Azure (later — same names)
+## Railway (later — same names)
 
-Checklist: [`../stack/AZURE.md`](../stack/AZURE.md). Do not create Azure resources from this repo unless Ethan asked.
+Checklist: [`../stack/RAILWAY.md`](../stack/RAILWAY.md). Do not create Railway resources from this repo unless Ethan asked.
 
-| Local | Azure |
+| Local | Railway |
 | --- | --- |
-| `docker-compose.yml` Postgres 16 | **Azure Database for PostgreSQL Flexible Server** (TLS + encryption at rest) |
-| app on :3000 | **Container Apps** (or App Service Linux) |
-| `.env` | Container Apps secrets or **Key Vault** |
-| local `uploads/` | **Azure Blob** |
-| (later) ACS placeholders | **ACS Email** on the product domain |
+| `docker-compose.yml` Postgres 16 | **Railway PostgreSQL** (private `DATABASE_URL`) |
+| app on :3000 | **Railpack** Next.js service (`railway.json`) |
+| `.env` | Railway **service variables** |
+| local `uploads/` | Volume at `/data` + `PHOTO_UPLOAD_DIR=/data/uploads` |
+| (later) Resend placeholders | **Resend HTTPS API** on the product domain |
 
-Use the **same** variable names: `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_EMAILS`, `LAUNCH_UNLOCK_PRO`, `BILLING_ENABLED`, plus later `ACS_EMAIL_*`, `AZURE_STORAGE_*`, `AZURE_KEY_VAULT_URL`. Never commit values.
+Use the **same** variable names: `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_EMAILS`, `LAUNCH_UNLOCK_PRO`, `BILLING_ENABLED`, `PHOTO_UPLOAD_DIR`, plus later `RESEND_API_KEY`, `EMAIL_FROM`. Optional: `GMAIL_*`. Dormant: `AZURE_STORAGE_*`. Superseded: `ACS_EMAIL_*`. Never commit values.
 
-Prod: `npx prisma migrate deploy` against Flexible Server before traffic. SQLite is not prod.
+Prod: `npx prisma migrate deploy` (pre-deploy in `railway.json`) against Railway Postgres before traffic. Do not seed production. SQLite is not prod.
+
+Azure Container Apps / Flexible Server / ACS / Key Vault are **not** the default. Historical notes: [`../stack/AZURE.md`](../stack/AZURE.md).

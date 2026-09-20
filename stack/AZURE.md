@@ -1,45 +1,30 @@
-# Azure — deploy checklist (app-web)
+# Azure — superseded deploy checklist (app-web)
 
-Process we actually use when **deploying**. This is **not** an MCP connector and not a place to fake `az` automation.
+**Superseded.** New `app-web` products ship on **Railway + Resend**. See [`RAILWAY.md`](./RAILWAY.md) and [`APP-WEB.md`](./APP-WEB.md).
 
-Do not provision Azure from a Cloud Agent unless Ethan asked. Local Docker (A2) comes first.
+This file stays as a historical / reopen-only checklist. Do **not** provision Azure, ACS Email, Blob, or Key Vault unless Ethan locks that path again in `decisions/`.
 
-## Shape (bare bones)
+Do not provision Azure from a Cloud Agent unless Ethan asked.
 
-| Concern | Service |
+## Historical shape (do not assume for new products)
+
+| Concern | Service (old default) |
 | --- | --- |
-| App | **Container Apps** (preferred) or App Service Linux |
+| App | Container Apps (or App Service Linux) |
 | Images | Azure Container Registry |
-| Database | **Azure Database for PostgreSQL Flexible Server** (Postgres 16) |
-| Encrypt SQL | Encryption at rest (platform TDE minimum; CMK via Key Vault when practical) |
-| In transit | **TLS** on `DATABASE_URL` — no cleartext SQL on the public network |
-| Email | **Azure Communication Services Email** on the product domain (OTP + CS replies) |
-| Files | **Azure Blob** (photos, ticket attachments) |
-| Secrets | ACA secrets or **Key Vault** |
-| Domain | Custom hostname + TLS |
-| Analytics | In-app / Azure only — no Mixpanel/Amplitude |
+| Database | Azure Database for PostgreSQL Flexible Server (Postgres 16) |
+| Email | Azure Communication Services Email — **superseded; unused** |
+| Files | Azure Blob — **dormant / optional only**. Prod default is a Railway volume. |
+| Secrets | ACA secrets or Key Vault — **superseded** by Railway service variables |
 
-## Same names as local
+## If Ethan reopens Azure
 
-`DATABASE_URL`, `AUTH_SECRET`, `ADMIN_EMAILS`, `LAUNCH_UNLOCK_PRO`, `BILLING_ENABLED`, `ACS_EMAIL_CONNECTION_STRING`, `ACS_EMAIL_SENDER`, `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_STORAGE_CONTAINER`, `AZURE_KEY_VAULT_URL`.
+Use the **same Railway/Resend-matching names** (`DATABASE_URL`, `AUTH_SECRET`, `ADMIN_EMAILS`, `LAUNCH_UNLOCK_PRO`, `BILLING_ENABLED`, `PHOTO_UPLOAD_DIR`, `RESEND_API_KEY`, `EMAIL_FROM`). Do not invent a second set of Azure-only names. Leave `ACS_EMAIL_*` unset unless a new decision revives ACS.
 
 Never commit values.
 
-## Prod checklist
-
-1. Flexible Server up; TLS required; firewall allows the Container App (not `0.0.0.0/0` unless Ethan explicitly accepts that for a spike).
-2. Secrets in ACA or Key Vault — including `AUTH_SECRET` and `ADMIN_EMAILS`.
-3. `npx prisma migrate deploy` against Flexible Server **before** traffic.
-4. ACS Email: SPF / DKIM / DMARC on the sending domain **before** prod OTP.
-5. Blob container created; app identity or connection string in secrets.
-6. Soft-launch flags: `LAUNCH_UNLOCK_PRO=true`, `BILLING_ENABLED=false` until D4 kill switch.
-7. Custom domain + TLS on the Container App.
-8. Confirm the app **refuses** SQLite `file:` URLs.
-
 ## Explicitly not this file
 
+- The default prod path.
 - A made-up Azure MCP server.
 - Bicep/Terraform unless the product repo later grows a real module (fill then).
-- Day-to-day mail/calendar connectors.
-
-When a product repo grows real deploy scripts, link them from [`../deploy/README.md`](../deploy/README.md) and keep names aligned.

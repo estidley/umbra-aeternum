@@ -35,7 +35,7 @@ Native app-open badges awarded from web visits, Stripe, chart engines that need 
 
 ## D2 — Admin KPIs
 
-Product health next to the actions that move it. **Aggregate only.** Azure-only.
+Product health next to the actions that move it. **Aggregate only.** In-app / Railway only.
 
 ### Checklist
 
@@ -66,7 +66,7 @@ WebAuthn **after** email OTP works. Ethan first. **No SMS.**
 
 ### Checklist
 
-- [ ] Email OTP / magic-link already sending from ACS (C2).
+- [ ] Email OTP / magic-link already sending from Resend (C2).
 - [ ] Passkeys as the primary 2FA path. Ethan’s account first.
 - [ ] No phone numbers, no SMS fallback.
 - [ ] Recovery still email-based.
@@ -94,7 +94,7 @@ Money after the web product has been lived in. Native **after** the web look is 
 
 - [ ] QA the web loop (log → score → boards → admin) with launch unlock still on.
 - [ ] Flip is mechanical: `LAUNCH_UNLOCK_PRO=false` and `BILLING_ENABLED=true`. No dated banner required.
-- [ ] Wire checkout (Stripe or Azure-friendly billing). Keep the constants you stored in A3.
+- [ ] Wire checkout (Stripe). Keep the constants you stored in A3.
 - [ ] Cancel on web: **never wipe history**. Free loses convenient Pro **views**, not the underlying logs. Resubscribe restores views.
 - [ ] Comp / influencer grants stay **admin-only** (not a public coupon SKU).
 - [ ] **Native iOS/Android last**, same UX as the locked web. GPS / health integrations after that if CURRENT says so.
