@@ -17,19 +17,20 @@ Create a new product repo with GitHub **Use this template**. Then fill `PLAN.md`
 | `HANDOFF.md` | Cross-AI board (Cursor ↔ Claude ↔ Grok ↔ Cloud Agent) |
 | `stack/` | Stack **by deployment kind** — not one flat list |
 | `connectors/` | GitHub + Figma only (process-useful) |
-| `docker-compose.yml` + `scripts/` + `.env.example` | Local Postgres 16 ≈ Azure names |
-| `deploy/README.md` | Local + Azure checklist |
+| `docker-compose.yml` + `scripts/` + `.env.example` | Local Postgres 16 ≈ Railway/Resend names |
+| `railway.json` | Railpack deploy stub (migrate + healthcheck) |
+| `deploy/README.md` | Local + Railway checklist |
 
 ## Deployment kind
 
-- **`app-web` (default):** web → maybe native. Use **100%** of the playbook ([`stack/APP-WEB.md`](./stack/APP-WEB.md) + phases A1–D4). Next.js / TypeScript / Tailwind / Prisma / Postgres 16. Azure: Container Apps, Flexible Server, ACS Email, Blob, Key Vault. Local ≈ Azure.
+- **`app-web` (default):** web → maybe native. Use **100%** of the playbook ([`stack/APP-WEB.md`](./stack/APP-WEB.md) + phases A1–D4). Next.js / TypeScript / Tailwind / Prisma / Postgres 16. Railway: Railpack app, Postgres, volume uploads, Resend HTTPS API. Local ≈ Railway.
 - **Anything else:** [`stack/OTHER-DEPLOYMENTS.md`](./stack/OTHER-DEPLOYMENTS.md) — short stubs, fill when needed. No fake A1–D4.
 
 ## Phase labels (app-web)
 
-**A1** identity+score/logging+Postgres Prisma · **A2** local Docker≈Azure · **A3** soft-launch flags · **A4** theme/shell  
+**A1** identity+score/logging+Postgres Prisma · **A2** local Docker≈Railway · **A3** soft-launch flags · **A4** theme/shell  
 **B1** log UX · **B2** boards/friends · **B3** profile units/timezone/photos · **B4** edit/swipe-delete  
-**C1** admin · **C2** ACS Email+OTP+tickets · **C3** IP soft-lock · **C4** anti-cheat+Report  
+**C1** admin · **C2** Resend Email+OTP+tickets · **C3** IP soft-lock · **C4** anti-cheat+Report  
 **D1** charts/achievements · **D2** admin KPIs · **D3** passkeys · **D4** payments then native last
 
 ## Token rules

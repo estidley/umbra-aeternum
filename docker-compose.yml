@@ -1,5 +1,5 @@
-# Local Postgres 16 — same major as Azure Database for PostgreSQL Flexible Server.
-# Azurite (Blob emulator) can be added later; files use local disk when Blob env is unset.
+# Local Postgres 16 — same engine family as Railway PostgreSQL.
+# Uploads use local disk when PHOTO_UPLOAD_DIR is unset; Azure Blob stays dormant.
 # Stub for app-web clones. Change user/db names in the product repo if you want; keep the engine.
 services:
   postgres:

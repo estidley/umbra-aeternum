@@ -25,24 +25,24 @@ A human can register, sign in, persist **one** primary log, and see the computed
 ### Pitfalls
 
 - Designing the whole social graph before a single log saves.
-- SQLite-first schema that later breaks on Flexible Server (`DateTime`, enums, constraints).
+- SQLite-first schema that later breaks on Railway Postgres (`DateTime`, enums, constraints).
 - Putting the formula only in the client.
 - Accepting every chat “what if” field that does not change the score.
 
 ### What NOT to do early
 
-Payments, Stripe, passkeys, native apps, GPS, boards polish, admin KPIs, ACS wiring, chart redesigns, extra MET/catalog rows you do not need to score V1.
+Payments, Stripe, passkeys, native apps, GPS, boards polish, admin KPIs, Resend wiring, chart redesigns, extra MET/catalog rows you do not need to score V1.
 
 ---
 
-## A2 — Local Docker ≈ Azure
+## A2 — Local Docker ≈ Railway
 
-Local should be a dress rehearsal for Azure. Same engine major, same env **names**. Do **not** provision Azure this slice.
+Local should be a dress rehearsal for Railway. Same engine major, same env **names**. Do **not** provision Railway this slice.
 
 ### Checklist
 
 - [ ] `docker-compose.yml` runs **Postgres 16** (volume, `5432`, healthcheck).
-- [ ] `.env.example` lists Azure-matching names: `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_EMAILS`, `LAUNCH_UNLOCK_PRO`, `BILLING_ENABLED`, plus commented ACS / Blob / Key Vault.
+- [ ] `.env.example` lists Railway/Resend-matching names: `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_EMAILS`, `LAUNCH_UNLOCK_PRO`, `BILLING_ENABLED`, `PHOTO_UPLOAD_DIR`, plus commented `RESEND_API_KEY` / `EMAIL_FROM`, optional `GMAIL_*`, dormant `AZURE_STORAGE_*`, superseded `ACS_EMAIL_*`.
 - [ ] `scripts/dev-up.sh` + `scripts/dev-up.ps1` bring compose up and wait healthy.
 - [ ] `scripts/db-migrate.sh` → `prisma generate` + `migrate deploy`.
 - [ ] `scripts/db-seed.sh` → `prisma db seed` (demo user documented in README).
@@ -51,17 +51,17 @@ Local should be a dress rehearsal for Azure. Same engine major, same env **names
 
 ### Done when
 
-Fresh clone: copy `.env.example` → compose → migrate → seed → `npm run dev` against Docker Postgres. No Azure resources created.
+Fresh clone: copy `.env.example` → compose → migrate → seed → `npm run dev` against Docker Postgres. No Railway resources created.
 
 ### Pitfalls
 
 - Leftover `DATABASE_URL=file:./dev.db` in the shell winning over `.env`.
-- Different variable names locally vs ACA/Key Vault.
+- Different variable names locally vs Railway service variables.
 - Skipping healthcheck; migrate races the engine.
 
 ### What NOT to do early
 
-`az` provisioning, Azurite-unless-needed, Key Vault in local compose, committing `.env`.
+Railway provisioning, Azurite-unless-needed, Azure Key Vault in local compose, committing `.env`.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Not the primary playbook.** If `PLAN.md` says **deployment kind = `app-web`**, ignore this file.
 
-These are **fill-when-needed** stubs. Do **not** invent an A1–D4 sequence, a fake Azure MCP, or a connector catalog. Token-efficient: only write a process here after Ethan has actually used it twice (or explicitly locks it).
+These are **fill-when-needed** stubs. Do **not** invent an A1–D4 sequence, a fake Railway/Azure MCP, or a connector catalog. Token-efficient: only write a process here after Ethan has actually used it twice (or explicitly locks it).
 
 ---
 
@@ -19,14 +19,14 @@ These are **fill-when-needed** stubs. Do **not** invent an A1–D4 sequence, a f
 
 - **When:** Godot / GDScript shipped as a game (Steam, itch, export templates).
 - **Fill later:** engine version, export targets, save-data location, store checklist.
-- **Do not:** run Next.js/Prisma/Azure Flexible Server “for consistency.”
+- **Do not:** run Next.js/Prisma/Railway Postgres “for consistency.”
 - **Process so far:** none locked in this template.
 
 ## `native-android`
 
 - **When:** Android-first (Kotlin, Play). Not “web wrapped later.”
 - **Fill later:** min SDK, signing, Play track, privacy.
-- **Do not:** copy the app-web email/OTP/ACS path unless you actually use it.
+- **Do not:** copy the app-web email/OTP/Resend path unless you actually use it.
 - **Process so far:** none locked in this template.
 
 ## `native-ios`
@@ -39,7 +39,7 @@ These are **fill-when-needed** stubs. Do **not** invent an A1–D4 sequence, a f
 
 - **When:** PowerShell/Node scripts, local dashboards, one-machine utilities.
 - **Fill later:** how to run, what must never hit a public host.
-- **Do not:** Docker-Postgres-Azure theatre.
+- **Do not:** Docker-Postgres-Railway theatre.
 - **Process so far:** none locked in this template.
 
 ## `other`

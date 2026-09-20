@@ -25,6 +25,17 @@ Keep messages short. Decisions live in `decisions/`, not here.
 
 ---
 
+## 2026-09-20 — app-web default shifted to Railway + Resend
+
+| Field | Value |
+| --- | --- |
+| Date | 2026-09-20 |
+| From | cloud-agent |
+| To | any |
+| Status | done |
+| Phase | A1 (template; no product cloned) |
+| Message | Playbook defaults now match how Bragline ships: Railway (app + Postgres + `/data` volume) and Resend HTTPS API (`RESEND_API_KEY`, `EMAIL_FROM`). Azure ACA / Flexible Server / ACS / Key Vault are superseded. Azure Blob is dormant/optional. Env names match Railway, not Azure. Do not copy Bragline app source. See `decisions/CHANGELOG.md` 2026-09-20 and `stack/APP-WEB.md`. |
+
 ## 2026-09-17 — Template filled (process + stubs)
 
 | Field | Value |

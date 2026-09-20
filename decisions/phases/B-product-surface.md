@@ -72,7 +72,7 @@ People must enter units they understand; the data plane stays canonical. Photos 
 - [ ] Valid ranges that actually accept the values humans type (do not HTML-`min` the stored unit while they type the display unit).
 - [ ] Timezone asked at **signup** with browser default; **Skip** still **persists** the detected zone. Editable on profile.
 - [ ] Streaks / day boundaries / later KPIs use profile timezone.
-- [ ] Photos: JPEG/PNG/WebP, size cap, magic-byte sniff. Prod **Azure Blob**; local `uploads/` when Blob env is unset.
+- [ ] Photos: JPEG/PNG/WebP, size cap, magic-byte sniff. Prod **Railway volume** (`PHOTO_UPLOAD_DIR=/data/uploads`); local `uploads/` when unset. Azure Blob is dormant / optional only.
 - [ ] Upload disabled until ToS is checked. Abuse → **ban** path. NSFW auto-scan is later/optional.
 - [ ] Photo form is **not** nested inside Save profile in a way that HTML5 `required` fights the other fields.
 
@@ -88,7 +88,7 @@ A US user can save a lb weight and score correctly. Timezone exists even if they
 
 ### What NOT to do early
 
-NSFW vendor, Azurite-in-compose unless you need it, public CDN, per-user weight on admin KPIs.
+NSFW vendor, Azurite-in-compose unless you need it, public CDN, per-user weight on admin KPIs. Do not require Azure Blob for V1 photos.
 
 ---
 
