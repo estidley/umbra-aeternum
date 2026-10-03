@@ -18,6 +18,10 @@ class HermesClient {
         .callTimeout(60, TimeUnit.SECONDS)
         .build()
 
+    private val chatHttp = http.newBuilder()
+        .readTimeout(60, TimeUnit.SECONDS)
+        .build()
+
 
     fun login(baseUrl: String, username: String, password: String): String {
         val url = normalizeBase(baseUrl) + "/api/login"
@@ -111,7 +115,7 @@ class HermesClient {
             .post(body.toString().toRequestBody(JSON))
         if (sessionToken.isNotBlank()) builder.header("Authorization", "Bearer $sessionToken")
         val request = builder.build()
-        val raw = execute(request)
+        val raw = execute(chatHttp, request)
         return assistantText(raw)
     }
 
@@ -251,9 +255,11 @@ class HermesClient {
 
     private fun enc(value: String): String = Uri.encode(value)
 
-    private fun execute(request: Request): String {
+    private fun execute(request: Request): String = execute(http, request)
+
+    private fun execute(client: OkHttpClient, request: Request): String {
         try {
-            http.newCall(request).execute().use { response ->
+            client.newCall(request).execute().use { response ->
                 val text = response.body.string()
                 if (!response.isSuccessful) {
                     throw HermesException("HTTP ${response.code}\n${text.take(400)}")

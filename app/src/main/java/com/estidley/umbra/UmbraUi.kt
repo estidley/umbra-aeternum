@@ -261,7 +261,9 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun loadChatHistory() {
+    fun redownloadChat() = loadChatHistory(replace = true)
+
+    private fun loadChatHistory(replace: Boolean = false) {
         viewModelScope.launch {
             if (store.sessionToken().isBlank()) {
                 missingSession()
@@ -280,7 +282,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
             if (!_state.value.connected) return@launch
             val incoming = fetched.mapNotNull { lineFromHistory(it) }
             _state.update { state ->
-                val lines = mergeHistory(state.lines, incoming)
+                val lines = if (replace) incoming else mergeHistory(state.lines, incoming)
                 val scene = sceneFromHistory(lines)
                 state.copy(
                     lines = lines,
@@ -906,6 +908,7 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
                 Text(if (state.busy) "…" else "Send")
             }
         }
+        TextButton(onClick = { model.redownloadChat() }, enabled = !state.busy) { Text("Redownload chat") }
         TextButton(onClick = { model.disconnect() }) { Text("Sign out") }
     }
 }
