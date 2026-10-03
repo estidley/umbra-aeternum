@@ -5,6 +5,8 @@ import org.json.JSONObject
 
 data class ScenePerson(val id: String, val name: String, val portrait: String?)
 
+data class SpeechBeat(val speakerId: String, val speakerName: String, val text: String)
+
 data class ParsedTurn(
     val text: String,
     val speakerId: String,
@@ -13,6 +15,7 @@ data class ParsedTurn(
     val locationImage: String?,
     val present: List<ScenePerson>?,
     val proposals: List<Proposal>,
+    val beats: List<SpeechBeat> = emptyList(),
 )
 
 object SceneJson {
@@ -46,8 +49,11 @@ proposals stays [] unless you propose a sheet or book change. Each proposal is {
 
     fun parseAssistant(raw: String): AssistantReply {
         for (match in fence.findAll(raw)) {
+            val body = match.groupValues[1].trim()
+            val listed = beatList(body)
+            if (listed != null) return AssistantReply.Complete(beatsOnly(listed))
             val obj = try {
-                JSONObject(match.groupValues[1].trim())
+                JSONObject(body)
             } catch (_: Exception) {
                 continue
             }
@@ -77,7 +83,9 @@ proposals stays [] unless you propose a sheet or book change. Each proposal is {
             val portrait = nullableUrlField(person, "portrait") ?: return null
             present += ScenePerson(id = id, name = name, portrait = portrait.value)
         }
-        val text = if (obj.has("text") && !obj.isNull("text") && obj.opt("text") is String) obj.optString("text") else ""
+        val beats = beatsIn(obj)
+        val prose = if (obj.has("text") && !obj.isNull("text") && obj.opt("text") is String) obj.optString("text") else ""
+        val text = if (beats.isNotEmpty()) "" else prose
         val proposals = if (obj.has("proposals")) proposals(obj.optJSONArray("proposals")) else emptyList()
         return ParsedTurn(
             text = text,
@@ -87,7 +95,69 @@ proposals stays [] unless you propose a sheet or book change. Each proposal is {
             locationImage = locationImage.value,
             present = present,
             proposals = proposals,
+            beats = beats,
         )
+    }
+
+
+    private fun beatsOnly(beats: List<SpeechBeat>): ParsedTurn = ParsedTurn(
+        text = "",
+        speakerId = "",
+        speakerName = "",
+        locationName = null,
+        locationImage = null,
+        present = null,
+        proposals = emptyList(),
+        beats = beats,
+    )
+
+    private fun beatsIn(obj: JSONObject): List<SpeechBeat> {
+        beatList(obj.opt("text"))?.let { return it }
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            if (key == "text" || key == "present" || key == "proposals") continue
+            beatList(obj.opt(key))?.let { return it }
+        }
+        return emptyList()
+    }
+
+    private fun beatList(value: Any?): List<SpeechBeat>? {
+        val array = when (value) {
+            is JSONArray -> value
+            is String -> {
+                val trimmed = value.trim()
+                if (!trimmed.startsWith("[")) return null
+                try {
+                    JSONArray(trimmed)
+                } catch (_: Exception) {
+                    return null
+                }
+            }
+            else -> return null
+        }
+        if (array.length() == 0) return null
+        val out = mutableListOf<SpeechBeat>()
+        for (i in 0 until array.length()) {
+            val item = array.optJSONObject(i) ?: return null
+            if (!item.has("text") || item.isNull("text") || item.opt("text") !is String) return null
+            val (id, name) = beatSpeaker(item)
+            out += SpeechBeat(speakerId = id, speakerName = name, text = item.getString("text"))
+        }
+        return out
+    }
+
+    private fun beatSpeaker(obj: JSONObject): Pair<String, String> {
+        val speaker = obj.opt("speaker")
+        if (speaker is JSONObject) {
+            val id = if (speaker.opt("id") is String) speaker.optString("id") else ""
+            val name = if (speaker.opt("name") is String) speaker.optString("name") else ""
+            return id to name
+        }
+        if (speaker is String) return "" to speaker
+        val id = if (obj.opt("id") is String) obj.optString("id") else ""
+        val name = if (obj.opt("name") is String) obj.optString("name") else ""
+        return id to name
     }
 
     private fun jsonObject(obj: JSONObject, key: String): JSONObject? {

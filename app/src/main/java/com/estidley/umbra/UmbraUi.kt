@@ -1,6 +1,7 @@
 package com.estidley.umbra
 
 import android.app.Application
+import android.graphics.Typeface
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -24,13 +25,19 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -41,15 +48,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
@@ -60,6 +75,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,6 +90,10 @@ private val Gold = Color(0xFFD97A2B)
 private val Muted = Color(0xFFA3A9BA)
 private val Faint = Color(0xFF7C8399)
 private val Player = Color(0xFF1B1F29)
+private val PlayerBubble = Color(0xFF1F4E79)
+private val UmbraBubble = Color(0xFF4A2670)
+private val UmbraInk = Color(0xFFE7CCFF)
+private val NeutralBubble = Color(0xFF2A2F3D)
 
 private val Audiences = listOf("umbra" to "Umbra", "group" to "Group", "area" to "Area", "whisper" to "Whisper")
 
@@ -97,7 +118,11 @@ private val Skills = listOf(
     "survival" to "Survival",
 )
 
-data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String, val serverId: Long? = null, val createdAt: String? = null)
+data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String, val serverId: Long? = null, val createdAt: String? = null, val speakerId: String = "", val beats: List<SpeechBeat> = emptyList())
+
+data class RollPrompt(val name: String, val purpose: String, val bonus: Int)
+
+data class DieShow(val id: Long, val caption: String)
 
 data class UmbraUiState(
     val connected: Boolean = false,
@@ -130,6 +155,8 @@ data class UmbraUiState(
     val compendiumHasMore: Boolean = false,
     val compendiumNextOffset: Int = 0,
     val compendiumError: String = "",
+    val rollPrompt: RollPrompt? = null,
+    val dieShow: DieShow? = null,
 )
 
 class UmbraViewModel(app: Application) : AndroidViewModel(app) {
@@ -137,6 +164,8 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     private val hermes = HermesClient()
     private var signingOut = false
     private var compendiumSearch: Job? = null
+    private var dieSerial = 0L
+    private val speakerColors = SpeakerColors(app)
     private val _state = MutableStateFlow(
         UmbraUiState(baseUrl = store.baseUrl()),
     )
@@ -309,6 +338,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                 apiContent = message.content,
                 serverId = message.id,
                 createdAt = message.createdAt,
+                speakerId = "player",
             )
             "assistant" -> when (val reply = SceneJson.parseAssistant(message.content)) {
                 AssistantReply.Incomplete -> ChatLine(
@@ -326,6 +356,8 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     apiContent = message.content,
                     serverId = message.id,
                     createdAt = message.createdAt,
+                    speakerId = reply.turn.speakerId,
+                    beats = reply.turn.beats,
                 )
             }
             else -> null
@@ -361,8 +393,8 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
             if (line.role != "assistant") continue
             when (val reply = SceneJson.parseAssistant(line.apiContent)) {
                 is AssistantReply.Complete -> {
-                    location = reply.turn.locationName
-                    present = reply.turn.present ?: emptyList()
+                    if (reply.turn.locationName != null) location = reply.turn.locationName
+                    if (reply.turn.present != null) present = reply.turn.present
                     saw = true
                 }
                 AssistantReply.Incomplete -> Unit
@@ -503,8 +535,8 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         }
         val whisper = if (current.audience == "whisper") current.whisperTo else null
         val wire = SceneJson.playerContent(current.audience, whisper, text)
-        val history = current.lines + ChatLine("user", text, "You", wire)
-        _state.update { it.copy(lines = history, draft = "", busy = true, awaitingReply = true, banner = "") }
+        val history = current.lines + ChatLine("user", text, "You", wire, speakerId = "player")
+        _state.update { it.copy(lines = history, draft = "", busy = true, awaitingReply = true, banner = "", rollPrompt = null) }
         viewModelScope.launch {
             val raw = withContext(Dispatchers.IO) {
                 try {
@@ -531,11 +563,15 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                             awaitingReply = false,
                             lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", raw),
                             pending = null,
+                            rollPrompt = null,
                         )
                     }
                 }
                 is AssistantReply.Complete -> {
                     val turn = reply.turn
+                    val spoken = if (turn.beats.isNotEmpty()) turn.beats.joinToString("\n") { it.text } else turn.text
+                    val ask = RollAsks.parse(spoken)
+                    val prompt = ask?.let { parsed -> RollPrompt(parsed.name, parsed.purpose, parsed.bonus(store.character())) }
                     val notes = mutableListOf<String>()
                     for (proposal in turn.proposals) {
                         notes += try {
@@ -548,11 +584,12 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                         it.copy(
                             busy = false,
                             awaitingReply = false,
-                            lines = history + ChatLine("assistant", turn.text, turn.speakerName, raw),
+                            lines = history + ChatLine("assistant", turn.text, turn.speakerName, raw, speakerId = turn.speakerId, beats = turn.beats),
                             present = turn.present ?: emptyList(),
                             locationName = turn.locationName ?: it.locationName,
                             banner = if (notes.isEmpty()) "" else notes.joinToString("\n"),
                             pending = null,
+                            rollPrompt = prompt,
                             character = store.character(),
                             book = store.book(),
                             sheetTick = it.sheetTick + 1,
@@ -561,6 +598,23 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    fun pickRollMode(mode: String) {
+        val prompt = _state.value.rollPrompt ?: return
+        dieSerial += 1
+        val caption = prompt.name + ": " + rollCheck(prompt.bonus, mode)
+        _state.update { it.copy(rollPrompt = null, dieShow = DieShow(dieSerial, caption)) }
+    }
+
+    fun flashRoll(caption: String) {
+        dieSerial += 1
+        val id = dieSerial
+        _state.update { it.copy(dieShow = DieShow(id, caption)) }
+    }
+
+    fun speakerBubbleColor(explicitId: String, name: String, present: List<ScenePerson>): Color {
+        return Color(speakerColors.colorFor(explicitId, name, present))
     }
 
     fun saveIdentity(name: String, species: String, subspecies: String, background: String, classId: String, subclass: String, level: String, alignment: String) {
@@ -749,6 +803,7 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
             if (state.accountScreen == "register") RegisterScreen(state, model) else LoginScreen(state, model)
             return@MaterialTheme
         }
+        Box(Modifier.fillMaxSize()) {
         Scaffold(containerColor = Ink, contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -765,6 +820,8 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
                     else -> ChatScreen(state, model, Modifier.weight(1f))
                 }
             }
+        }
+        EmberDieFade(state.dieShow?.id ?: 0L, state.dieShow?.caption.orEmpty())
         }
     }
 }
@@ -854,79 +911,213 @@ private fun RegisterScreen(state: UmbraUiState, model: UmbraViewModel) {
     }
 }
 
+private fun LazyListState.isAtBottom(): Boolean {
+    val total = layoutInfo.totalItemsCount
+    if (total == 0) return true
+    val last = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
+    return last.index >= total - 1
+}
+
 @Composable
 private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).padding(0.dp)) {
-            Text(state.locationName, color = Color(0xFFE8EAF0), style = MaterialTheme.typography.titleMedium)
-            Box(
-                Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF2A2F3D), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center,
-            ) { Text("Scene", color = Faint) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Audiences.forEach { (id, label) ->
-                FilterChip(selected = state.audience == id, onClick = { model.setAudience(id) }, label = { Text(label) })
+    val listState = rememberLazyListState()
+    var followBottom by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .distinctUntilChanged()
+            .collect { scrolling ->
+                if (!scrolling) followBottom = listState.isAtBottom()
             }
-        }
-        val speaking = when (state.audience) {
-            "umbra" -> "Speaking to Umbra"
-            "group" -> "Speaking to Group"
-            "area" -> "Speaking to Area"
-            "whisper" -> state.whisperTo?.let { "Whispering to ${it.name}" } ?: "Choose someone to whisper to"
-            else -> "Speaking"
-        }
-        Text(speaking, color = Gold, style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            if (state.present.isEmpty()) {
-                Text("No one in the scene yet.", color = Faint)
+    }
+    LaunchedEffect(state.lines.size, state.awaitingReply) {
+        if (!followBottom) return@LaunchedEffect
+        val last = listState.layoutInfo.totalItemsCount - 1
+        if (last >= 0) listState.animateScrollToItem(last)
+    }
+    val atBottom by remember { derivedStateOf { listState.isAtBottom() } }
+    Box(modifier) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).padding(0.dp)) {
+                Text(state.locationName, color = Color(0xFFE8EAF0), style = MaterialTheme.typography.titleMedium)
+                Box(
+                    Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF2A2F3D), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) { Text("Scene", color = Faint) }
             }
-            state.present.forEach { person ->
-                val selected = state.whisperTo?.id == person.id && state.audience == "whisper"
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { model.selectWhisper(person) },
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Audiences.forEach { (id, label) ->
+                    FilterChip(selected = state.audience == id, onClick = { model.setAudience(id) }, label = { Text(label) })
+                }
+            }
+            val speaking = when (state.audience) {
+                "umbra" -> "Speaking to Umbra"
+                "group" -> "Speaking to Group"
+                "area" -> "Speaking to Area"
+                "whisper" -> state.whisperTo?.let { "Whispering to ${it.name}" } ?: "Choose someone to whisper to"
+                else -> "Speaking"
+            }
+            Text(speaking, color = Gold, style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                if (state.present.isEmpty()) {
+                    Text("No one in the scene yet.", color = Faint)
+                }
+                state.present.forEach { person ->
+                    val selected = state.whisperTo?.id == person.id && state.audience == "whisper"
+                    Text(
+                        person.name,
+                        color = if (selected) Gold else Color(0xFFE8EAF0),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.clickable { model.selectWhisper(person) }.padding(vertical = 4.dp),
+                    )
+                }
+            }
+            val hand = rememberHandMeDown()
+            Box(Modifier.weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Portrait(if (selected) Gold else Color(0xFF2A2F3D))
-                    Text(person.name, color = Color(0xFFE8EAF0), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.lines) { line ->
-                if (line.role == "user") {
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                        Text(line.text, color = Color(0xFFE8EAF0), modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(Player).padding(10.dp))
+                    items(state.lines) { line ->
+                        ChatBubbles(line, hand, state.present, model)
                     }
-                } else {
-                    Column {
-                        if (line.speaker.isNotBlank()) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Portrait(Color(0xFF2A2F3D), 28)
-                                Text(line.speaker, color = Gold, style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-                        Text(line.text, color = Color(0xFFE8EAF0))
+                    if (state.awaitingReply) {
+                        item { TypingLine(hand) }
                     }
                 }
+                if (!atBottom) {
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 8.dp)
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2A2F3D))
+                            .clickable {
+                                followBottom = true
+                                val last = listState.layoutInfo.totalItemsCount - 1
+                                if (last >= 0) scope.launch { listState.animateScrollToItem(last) }
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardArrowDown,
+                            contentDescription = "Latest message",
+                            tint = Color(0xFFE8EAF0),
+                        )
+                    }
+                }
             }
-            if (state.awaitingReply) {
-                item { TypingLine() }
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(state.draft, model::setDraft, label = { Text("Message the table") }, modifier = Modifier.weight(1f))
-            Button(onClick = { model.sendChat() }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12))) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(state.draft, model::setDraft, label = { Text("Message the table") }, modifier = Modifier.weight(1f))
+                Button(onClick = { model.sendChat() }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12))) {
                 Text(if (state.busy) "…" else "Send")
+                }
             }
+            TextButton(onClick = { model.redownloadChat() }, enabled = !state.busy) { Text("Redownload chat") }
+            TextButton(onClick = { model.disconnect() }) { Text("Sign out") }
         }
-        TextButton(onClick = { model.redownloadChat() }, enabled = !state.busy) { Text("Redownload chat") }
-        TextButton(onClick = { model.disconnect() }) { Text("Sign out") }
+        val prompt = state.rollPrompt
+        if (prompt != null) {
+            RollAskOverlay(prompt, onPick = model::pickRollMode)
+        }
     }
 }
 
 @Composable
-private fun TypingLine() {
+private fun rememberHandMeDown(): FontFamily {
+    val context = LocalContext.current
+    return remember {
+        FontFamily(Typeface.createFromAsset(context.assets, "handmeds.ttf"))
+    }
+}
+
+private fun isUmbraVoice(name: String, id: String): Boolean {
+    val cleaned = name.trim().lowercase()
+    val who = id.trim().lowercase()
+    if (who.isNotEmpty() && who != "umbra") return false
+    return who == "umbra" || cleaned.isEmpty() || cleaned == "umbra" || cleaned == "narration"
+}
+
+@Composable
+private fun ChatBubbles(line: ChatLine, hand: FontFamily, present: List<ScenePerson>, model: UmbraViewModel) {
+    if (line.role == "user") {
+        SpeechBubble(text = line.text, name = "", umbra = false, color = PlayerBubble, hand = hand, alignEnd = true)
+        return
+    }
+    if (line.beats.isNotEmpty()) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            line.beats.forEach { beat ->
+                val umbra = isUmbraVoice(beat.speakerName, beat.speakerId)
+                val color = if (umbra) UmbraBubble else model.speakerBubbleColor(beat.speakerId, beat.speakerName, present)
+                SpeechBubble(
+                    text = beat.text,
+                    name = if (umbra) "Umbra" else beat.speakerName,
+                    umbra = umbra,
+                    color = color,
+                    hand = hand,
+                    alignEnd = false,
+                )
+            }
+        }
+        return
+    }
+    val incomplete = line.text == SceneJson.INCOMPLETE
+    val umbra = !incomplete && line.role == "assistant" && isUmbraVoice(line.speaker, line.speakerId)
+    val color = when {
+        incomplete || line.role == "error" -> NeutralBubble
+        umbra -> UmbraBubble
+        else -> model.speakerBubbleColor(line.speakerId, line.speaker, present)
+    }
+    SpeechBubble(
+        text = line.text,
+        name = if (umbra) line.speaker.ifBlank { "Umbra" } else if (incomplete) "" else line.speaker,
+        umbra = umbra,
+        color = color,
+        hand = hand,
+        alignEnd = false,
+    )
+}
+
+@Composable
+private fun SpeechBubble(
+    text: String,
+    name: String,
+    umbra: Boolean,
+    color: Color,
+    hand: FontFamily,
+    alignEnd: Boolean,
+) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
+        Column(
+            Modifier
+                .widthIn(max = 300.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(color)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            if (name.isNotBlank()) {
+                Text(
+                    name,
+                    color = if (umbra) UmbraInk else Color(0xFFE8EAF0),
+                    fontFamily = if (umbra) hand else null,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                )
+            }
+            Text(
+                text,
+                color = if (umbra) UmbraInk else Color(0xFFE8EAF0),
+                fontFamily = if (umbra) hand else null,
+                fontSize = 15.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TypingLine(hand: FontFamily) {
     val transition = rememberInfiniteTransition(label = "typing")
     val phase by transition.animateFloat(
         initialValue = 0f,
@@ -942,15 +1133,19 @@ private fun TypingLine() {
         1 -> ".."
         else -> "..."
     }
-    Text("Umbra is typing$dots", color = Muted)
-}
-
-@Composable
-private fun Portrait(border: Color, size: Int = 44) {
-    Box(
-        Modifier.size(size.dp).clip(CircleShape).border(1.dp, border, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) { Text("Img", color = Faint, style = MaterialTheme.typography.labelSmall) }
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+        Text(
+            "Umbra is typing$dots",
+            color = UmbraInk,
+            fontFamily = hand,
+            fontSize = 15.sp,
+            modifier = Modifier
+                .widthIn(max = 300.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(UmbraBubble)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        )
+    }
 }
 
 @Composable

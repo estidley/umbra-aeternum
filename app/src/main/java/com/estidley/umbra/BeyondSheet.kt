@@ -54,7 +54,7 @@ private val Red = Color(0xFFB8651F)
 private val DiceRed = Color(0xFFD97A2B)
 
 private enum class SheetPage {
-    Main, Skills, Actions, Inventory, Spells, Speed, Features, Training, Background, Notes, Creatures,
+    Header, Saves, Dice, Skills, Actions, Reactions, Inventory, Spells, Features, Training, Background, Notes, Creatures,
 }
 
 private data class SheetFacts(
@@ -139,7 +139,7 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
     val facts = remember(state.sheetTick, state.character, state.book) {
         readFacts(state.character, state.book)
     }
-    var page by remember { mutableStateOf(SheetPage.Main) }
+    var page by remember { mutableStateOf(SheetPage.Header) }
     var menu by remember { mutableStateOf(false) }
     var dice by remember { mutableStateOf(false) }
     var counts by remember { mutableStateOf(mapOf(20 to 1)) }
@@ -155,35 +155,46 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
                 name = facts.name,
                 subtitle = facts.subtitle,
                 onBack = {
-                    if (page == SheetPage.Main && !menu) model.selectTab("chat") else {
+                    if (page == SheetPage.Header && !menu) model.selectTab("chat") else {
                         menu = false
-                        page = SheetPage.Main
+                        page = SheetPage.Header
                     }
                 },
             )
             if (menu) {
-                SectionMenu(onPick = {
+                SectionMenu(Modifier.weight(1f), onPick = {
                     page = it
                     menu = false
                 })
             } else {
                 when (page) {
-                    SheetPage.Main -> MainPage(facts, model, { menu = true }, { dice = true }, Modifier.weight(1f))
+                    SheetPage.Header -> HeaderPage(facts, model, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Saves -> SavesPage(facts, model, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Dice -> DicePage(counts, result, { sides ->
+                        val next = counts.toMutableMap()
+                        next[sides] = (next[sides] ?: 0) + 1
+                        counts = next
+                    }, { counts = mapOf(20 to 1); result = null }, { counts = emptyMap(); result = null }, {
+                        val active = if (counts.values.sum() == 0) mapOf(20 to 1) else counts
+                        val text = rollDice(active)
+                        result = text
+                        model.flashRoll(text)
+                    }, { menu = true }, Modifier.weight(1f))
                     SheetPage.Skills -> SkillsPage(facts, model, { menu = true }, Modifier.weight(1f))
-                    SheetPage.Actions -> ActionsPage(facts, creatureHp, creatureMax, { creatureHp = it }, { creatureMax = it }, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Actions -> ActionsPage(facts, model, creatureHp, creatureMax, { creatureHp = it }, { creatureMax = it }, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Reactions -> ReactionsPage({ menu = true }, Modifier.weight(1f))
                     SheetPage.Inventory -> InventoryPage(facts, inventoryMine, { inventoryMine = it }, { menu = true }, Modifier.weight(1f))
                     SheetPage.Spells -> SpellsPage(facts, spellQuery, { spellQuery = it }, { menu = true }, Modifier.weight(1f))
-                    SheetPage.Speed -> SimplePage("Speed, Defenses", listOf("Speed ${facts.speed} ft.", "Armor class ${facts.ac}", "No resistances are stored on this character."), { menu = true }, Modifier.weight(1f))
                     SheetPage.Features -> FeaturesPage(facts, { menu = true }, Modifier.weight(1f))
                     SheetPage.Training -> TrainingPage(facts, { menu = true }, Modifier.weight(1f))
                     SheetPage.Background -> BackgroundPage(facts, { menu = true }, Modifier.weight(1f))
                     SheetPage.Notes -> NotesPage(facts, { menu = true }, Modifier.weight(1f))
-                    SheetPage.Creatures -> CompanionsPage({ menu = true }, Modifier.weight(1f))
+                    SheetPage.Creatures -> CompanionsPage(creatureHp, creatureMax, { creatureHp = it }, { creatureMax = it }, { menu = true }, Modifier.weight(1f))
                 }
             }
         }
         if (!menu) {
-            EmberDie(onClick = { dice = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp))
+            EmberDie(onClick = { page = SheetPage.Dice; menu = false }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp))
         }
         if (dice) {
             DiceSheet(
@@ -196,7 +207,12 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
                 },
                 onReset = { counts = mapOf(20 to 1) },
                 onClear = { counts = emptyMap(); result = null },
-                onRoll = { result = rollDice(counts) },
+                onRoll = {
+                    val active = if (counts.values.sum() == 0) mapOf(20 to 1) else counts
+                    val text = rollDice(active)
+                    result = text
+                    model.flashRoll(text)
+                },
                 onClose = { dice = false },
             )
         }
@@ -230,11 +246,23 @@ private fun SectionBar(title: String, onMenu: () -> Unit, onGrid: (() -> Unit)? 
 }
 
 @Composable
-private fun MainPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> Unit, onDice: () -> Unit, modifier: Modifier) {
+private fun HeaderPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> Unit, modifier: Modifier) {
     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionBar("Header", onMenu)
         StatRow(facts, model)
-        SectionBar("Abilities, Saves, Senses", onMenu)
-        AbilityGrid(facts.scores)
+        Text(facts.subtitle, color = Ash, fontSize = 12.sp)
+        if (facts.inspiration) Text("Inspiration", color = InkText)
+        if (facts.conditions.isNotEmpty()) Text(facts.conditions.joinToString(", "), color = InkText, fontSize = 12.sp)
+        AbilityGrid(facts.scores) { label, bonus ->
+            model.flashRoll(label + " " + rollCheck(bonus, "normal"))
+        }
+    }
+}
+
+@Composable
+private fun SavesPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionBar("Saves", onMenu)
         Text("Saving Throws", color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         AbilityOrder.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -242,7 +270,13 @@ private fun MainPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> Uni
                     val bonus = saveBonus(facts, key)
                     val on = key in facts.saveProf
                     Row(
-                        Modifier.weight(1f).clip(RoundedCornerShape(20.dp)).background(Panel).border(1.dp, Line, RoundedCornerShape(20.dp)).padding(horizontal = 8.dp, vertical = 6.dp),
+                        Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Panel)
+                            .border(1.dp, Line, RoundedCornerShape(20.dp))
+                            .clickable { model.flashRoll(label + " save " + rollCheck(bonus, "normal")) }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text((if (on) "* " else "o ") + label, color = InkText, fontSize = 11.sp)
@@ -256,7 +290,23 @@ private fun MainPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> Uni
         SenseRow(passive(facts, "investigation", "int"), "PASSIVE INVESTIGATION")
         SenseRow(passive(facts, "insight", "wis"), "PASSIVE INSIGHT")
         Text(facts.vision, color = InkText, fontSize = 12.sp)
-        TextButton(onClick = onDice) { Text("Roll dice", color = Blue) }
+    }
+}
+
+@Composable
+private fun DicePage(
+    counts: Map<Int, Int>,
+    result: String?,
+    onCount: (Int) -> Unit,
+    onReset: () -> Unit,
+    onClear: () -> Unit,
+    onRoll: () -> Unit,
+    onMenu: () -> Unit,
+    modifier: Modifier,
+) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionBar("Dice", onMenu)
+        DiceControls(counts, result, onCount, onReset, onClear, onRoll)
     }
 }
 
@@ -306,13 +356,14 @@ private fun StatBlock(label: String, value: String) {
 }
 
 @Composable
-private fun AbilityGrid(scores: Map<String, Int>) {
+private fun AbilityGrid(scores: Map<String, Int>, onRoll: (String, Int) -> Unit) {
     AbilityOrder.chunked(3).forEach { row ->
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             row.forEach { (key, label) ->
                 val score = scores[key] ?: 10
+                val bonus = abilityMod(score)
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(Color(0xFF1B1F29)).border(1.dp, Line, RoundedCornerShape(18.dp)).padding(vertical = 8.dp),
+                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(Color(0xFF1B1F29)).border(1.dp, Line, RoundedCornerShape(18.dp)).clickable { onRoll(label, bonus) }.padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(label, color = Ash, fontSize = 8.sp)
@@ -351,7 +402,17 @@ private fun SkillsPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> U
                 Text(if (proficient) "*" else "o", color = InkText, modifier = Modifier.width(24.dp).clickable { model.toggleSkill(key, false) })
                 Text(ability.uppercase(), color = Ash, fontSize = 11.sp, modifier = Modifier.width(36.dp))
                 Text(label, color = InkText, modifier = Modifier.weight(1f), fontSize = 13.sp)
-                Text(signed(bonus), color = InkText, fontWeight = FontWeight.SemiBold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).border(1.dp, Line, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
+                Text(
+                    signed(bonus),
+                    color = InkText,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Panel)
+                        .border(1.dp, Line, RoundedCornerShape(8.dp))
+                        .clickable { model.flashRoll(label + " " + rollCheck(bonus, "normal")) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
             }
         }
     }
@@ -360,6 +421,7 @@ private fun SkillsPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> U
 @Composable
 private fun ActionsPage(
     facts: SheetFacts,
+    model: UmbraViewModel,
     creatureHp: Int,
     creatureMax: Int,
     onHp: (Int) -> Unit,
@@ -377,15 +439,21 @@ private fun ActionsPage(
         Text("Unarmed Strike", color = InkText, fontWeight = FontWeight.SemiBold)
         Text("MELEE ATTACK    5 FT. REACH", color = Ash, fontSize = 11.sp)
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text(signed(hit), color = InkText, modifier = Modifier.background(Panel).padding(horizontal = 8.dp, vertical = 4.dp))
-            Text("$damage bludgeoning", color = InkText, modifier = Modifier.background(Panel).padding(horizontal = 8.dp, vertical = 4.dp))
+            Text(
+                signed(hit),
+                color = InkText,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).clickable { model.flashRoll("Attack " + rollCheck(hit, "normal")) }.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+            Text(
+                "$damage bludgeoning",
+                color = InkText,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).clickable { model.flashRoll("Damage $damage bludgeoning") }.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
         }
         Text("Actions in Combat", color = InkText, fontWeight = FontWeight.SemiBold)
         Text(CombatActions.joinToString(", "), color = Color(0xFFA3A9BA), fontSize = 12.sp)
         Text("BONUS ACTIONS", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         Text("No bonus actions are stored.", color = Ash, fontSize = 12.sp)
-        Text("REACTIONS", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-        Text("Opportunity Attack", color = Color(0xFFA3A9BA), fontSize = 13.sp)
         Text("OTHER", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         Text("Interact with an Object", color = Color(0xFFA3A9BA), fontSize = 13.sp)
         Text("Limited uses", color = InkText, fontWeight = FontWeight.SemiBold)
@@ -799,12 +867,26 @@ private fun NoteBlock(title: String, value: String) {
 }
 
 @Composable
-private fun CompanionsPage(onMenu: () -> Unit, modifier: Modifier) {
-    Column(modifier.fillMaxSize()) {
+private fun CompanionsPage(
+    hp: Int,
+    max: Int,
+    onHp: (Int) -> Unit,
+    onMax: (Int) -> Unit,
+    onMenu: () -> Unit,
+    modifier: Modifier,
+) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionBar("Companions", onMenu)
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            Text("Your companions will appear here", color = InkText)
-        }
+        CreatureBlock(hp, max, onHp, onMax, showEmpty = true)
+    }
+}
+
+@Composable
+private fun ReactionsPage(onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionBar("Reactions", onMenu)
+        Text("Opportunity Attack", color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        Text("A creature you can see leaves your reach.", color = Color(0xFFA3A9BA), fontSize = 13.sp)
     }
 }
 
@@ -817,22 +899,24 @@ private fun SimplePage(title: String, lines: List<String>, onMenu: () -> Unit, m
 }
 
 @Composable
-private fun SectionMenu(onPick: (SheetPage) -> Unit) {
+private fun SectionMenu(modifier: Modifier, onPick: (SheetPage) -> Unit) {
     val rows = listOf(
-        "Abilities, Saves, Senses" to SheetPage.Main,
+        "Header" to SheetPage.Header,
+        "Saves" to SheetPage.Saves,
+        "Dice" to SheetPage.Dice,
         "Skills" to SheetPage.Skills,
         "Actions" to SheetPage.Actions,
+        "Reactions" to SheetPage.Reactions,
         "Inventory" to SheetPage.Inventory,
         "Spells" to SheetPage.Spells,
-        "Speed, Defenses" to SheetPage.Speed,
-        "Features & Traits" to SheetPage.Features,
-        "Proficiencies & Training" to SheetPage.Training,
+        "Features" to SheetPage.Features,
+        "Proficiencies" to SheetPage.Training,
         "Background" to SheetPage.Background,
         "Notes" to SheetPage.Notes,
         "Companions" to SheetPage.Creatures,
     )
-    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Reorder", color = Ash, modifier = Modifier.align(Alignment.End))
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Sections", color = Ash, modifier = Modifier.align(Alignment.End))
         rows.forEachIndexed { index, (label, dest) ->
             Text(
                 label,
@@ -861,31 +945,59 @@ private fun DiceSheet(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).background(Color(0xFF12151C)).border(1.dp, Line, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).clickable { }.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Roll Dice", color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                Text("X", color = InkText, modifier = Modifier.clickable { onClose() })
-            }
-            val selected = counts.entries.filter { it.value > 0 }.joinToString(" ") { "${it.value}d${it.key}" }.ifBlank { "d20" }
-            Text(selected, color = InkText, fontWeight = FontWeight.SemiBold)
-            Text("Change Dice", color = Blue, fontSize = 12.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                listOf(20, 12, 100, 10, 8, 6, 4).forEach { sides ->
-                    val on = (counts[sides] ?: 0) > 0
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) Color(0xFF2A2F3D) else Panel).clickable { onCount(sides) }.padding(8.dp)) {
-                        Text("d$sides", color = if (sides == 20) DiceRed else InkText, fontWeight = FontWeight.SemiBold)
-                        Text("${counts[sides] ?: 0}", color = Ash, fontSize = 10.sp)
-                    }
+            DiceControls(counts, result, onCount, onReset, onClear, onRoll, onClose)
+        }
+    }
+}
+
+@Composable
+private fun DiceControls(
+    counts: Map<Int, Int>,
+    result: String?,
+    onCount: (Int) -> Unit,
+    onReset: () -> Unit,
+    onClear: () -> Unit,
+    onRoll: () -> Unit,
+    onClose: (() -> Unit)? = null,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Roll Dice", color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            onClose?.let { close -> Text("X", color = InkText, modifier = Modifier.clickable { close() }.padding(8.dp)) }
+        }
+        val selected = counts.entries.filter { it.value > 0 }.joinToString(" ") { "${it.value}d${it.key}" }.ifBlank { "d20" }
+        Text(selected, color = InkText, fontWeight = FontWeight.SemiBold)
+        Text("Change Dice", color = Blue, fontSize = 12.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            listOf(20, 12, 100, 10, 8, 6, 4).forEach { sides ->
+                val on = (counts[sides] ?: 0) > 0
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) Color(0xFF2A2F3D) else Panel).clickable { onCount(sides) }.padding(8.dp),
+                ) {
+                    Text("d$sides", color = if (sides == 20) DiceRed else InkText, fontWeight = FontWeight.SemiBold)
+                    Text("${counts[sides] ?: 0}", color = Ash, fontSize = 10.sp)
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                Text("RESET", color = InkText, modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Line).clickable { onReset() }.padding(vertical = 10.dp), fontWeight = FontWeight.SemiBold)
-                Text("ROLL", color = InkText, modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Red).clickable { onRoll() }.padding(vertical = 10.dp), fontWeight = FontWeight.SemiBold)
-            }
-            Text("CLEAR DICE", color = Color(0xFFF6B47E), fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.End).clickable { onClear() })
-            if (result != null) {
-                Text(result, color = InkText, modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF0944A), RoundedCornerShape(12.dp)).background(Color(0xFF171B24)).padding(10.dp))
-            }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            RollChip("RESET", Line, Modifier.weight(1f), onReset)
+            RollChip("ROLL", Red, Modifier.weight(1f), onRoll)
+        }
+        Text("CLEAR DICE", color = Color(0xFFF6B47E), fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.End).clickable { onClear() }.padding(8.dp))
+        if (result != null) {
+            Text(result, color = InkText, modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF0944A), RoundedCornerShape(12.dp)).background(Color(0xFF171B24)).padding(10.dp))
+        }
+    }
+}
+
+@Composable
+private fun RollChip(label: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.height(48.dp).clip(RoundedCornerShape(12.dp)).background(color).clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = InkText, fontWeight = FontWeight.SemiBold)
     }
 }
 
