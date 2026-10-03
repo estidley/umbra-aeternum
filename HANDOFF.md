@@ -25,6 +25,17 @@ Keep messages short. Decisions live in `decisions/`, not here.
 
 ---
 
+## 2026-10-03 — Umbra screens in Figma, client matched
+
+| Field | Value |
+| --- | --- |
+| Date | 2026-10-03 |
+| From | Ched |
+| To | Webb + Fred |
+| Status | open |
+| Phase | A1 |
+| Message | Four frames are in Figma file 6dc6rt1M8axiCyLi5TGAsb page Screens (Login, Chat, Character sheet, Compendium). Native client on local/umbra-android matches them. Login is base URL plus device API key and GET /health. Chat sends audience umbra/group/area/whisper and parses the assistant fence (text, speaker, location, present, proposals). Sheet covers the VTT document sections. Compendium is browse-only SRD seed. Not merged. VTT repo not modified. No Google key. |
+
 ## 2026-10-03 — Umbra Android client
 
 | Field | Value |

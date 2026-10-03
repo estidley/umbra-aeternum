@@ -1,36 +1,45 @@
 package com.estidley.umbra
 
 import android.app.Application
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
@@ -45,171 +54,171 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class ChatLine(val role: String, val text: String)
+private val Ink = Color(0xFF14110E)
+private val Card = Color(0xFF221C17)
+private val Field = Color(0xFF2A241E)
+private val Gold = Color(0xFFE0C088)
+private val Muted = Color(0xFFC8BBA8)
+private val Faint = Color(0xFFA68456)
+private val Player = Color(0xFF2C3A32)
 
-data class UmbraUiState(
-    val displayName: String = "",
-    val character: JSONObject? = null,
-    val book: JSONObject? = null,
-    val lines: List<ChatLine> = emptyList(),
-    val draft: String = "",
-    val busy: Boolean = false,
-    val banner: String = "",
-    val pending: Proposal? = null,
-    val baseUrl: String = "",
-    val apiKey: String = "",
-    val health: String = "",
-    val tab: String = "sheet",
-    val bookFilter: String = "species",
-    val itemName: String = "",
+private val Audiences = listOf("umbra" to "Umbra", "group" to "Group", "area" to "Area", "whisper" to "Whisper")
+
+private val Skills = listOf(
+    "acrobatics" to "Acrobatics",
+    "animalhandling" to "Animal Handling",
+    "arcana" to "Arcana",
+    "athletics" to "Athletics",
+    "deception" to "Deception",
+    "history" to "History",
+    "insight" to "Insight",
+    "intimidation" to "Intimidation",
+    "investigation" to "Investigation",
+    "medicine" to "Medicine",
+    "nature" to "Nature",
+    "perception" to "Perception",
+    "performance" to "Performance",
+    "persuasion" to "Persuasion",
+    "religion" to "Religion",
+    "sleightofhand" to "Sleight of Hand",
+    "stealth" to "Stealth",
+    "survival" to "Survival",
 )
 
-private const val GM_SYSTEM = """
-You are the GM for a 5e table in Umbra. Talk in plain prose.
-When you want to change the character or the book, append one fenced json block and do not apply it yourself:
-```json
-{"proposals":[{"kind":"sheet","summary":"Pick up a rope","target":"inventory","data":{"name":"Rope","quantity":1}}]}
-```
-kind is sheet or book. target is inventory, species, subclass, monster, encounter, or sheet.
-Sheet species data uses speciesId. Sheet subclass data uses subclassId. Book entries need name and, for subclass, classId.
-"""
+data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String)
+
+data class UmbraUiState(
+    val connected: Boolean = false,
+    val busy: Boolean = false,
+    val banner: String = "",
+    val baseUrl: String = "",
+    val apiKey: String = "",
+    val tab: String = "chat",
+    val audience: String = "group",
+    val whisperTo: ScenePerson? = null,
+    val present: List<ScenePerson> = emptyList(),
+    val locationName: String = "Somewhere unlit",
+    val lines: List<ChatLine> = emptyList(),
+    val draft: String = "",
+    val pending: Proposal? = null,
+    val character: JSONObject? = null,
+    val book: JSONObject? = null,
+    val sheetTick: Int = 0,
+    val compendiumCategory: String = "items",
+    val compendiumQuery: String = "",
+    val compendiumId: String = "",
+)
 
 class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     private val store = LocalStore(app)
     private val hermes = HermesClient()
     private val queue = ArrayDeque<Proposal>()
-
     private val _state = MutableStateFlow(
-        UmbraUiState(
-            displayName = store.displayName(),
-            baseUrl = store.baseUrl(),
-            apiKey = store.apiKey(),
-        ),
+        UmbraUiState(baseUrl = store.baseUrl(), apiKey = store.apiKey()),
     )
     val state: StateFlow<UmbraUiState> = _state
 
-    init {
-        if (store.displayName().isNotBlank()) refreshLocal()
+    fun setBaseUrl(value: String) = _state.update { it.copy(baseUrl = value) }
+    fun setApiKey(value: String) = _state.update { it.copy(apiKey = value) }
+    fun setDraft(value: String) = _state.update { it.copy(draft = value) }
+    fun selectTab(tab: String) = _state.update { it.copy(tab = tab) }
+    fun setQuery(value: String) = _state.update { it.copy(compendiumQuery = value, compendiumId = "") }
+    fun setCategory(value: String) = _state.update { it.copy(compendiumCategory = value, compendiumId = "") }
+    fun selectEntry(id: String) = _state.update { it.copy(compendiumId = id) }
+
+    fun setAudience(audience: String) {
+        if (audience !in setOf("umbra", "group", "area", "whisper")) return
+        _state.update { it.copy(audience = audience) }
     }
 
-    fun login(name: String) {
-        val trimmed = name.trim()
-        if (trimmed.isEmpty()) {
-            _state.update { it.copy(banner = "Enter a display name") }
+    fun selectWhisper(person: ScenePerson) {
+        _state.update { it.copy(audience = "whisper", whisperTo = person) }
+    }
+
+    fun disconnect() {
+        queue.clear()
+        _state.update { it.copy(connected = false, pending = null, banner = "") }
+    }
+
+    fun checkConnection() {
+        val current = _state.value
+        if (current.apiKey.isBlank()) {
+            _state.update { it.copy(banner = "Enter an API key") }
             return
         }
-        store.setDisplayName(trimmed)
-        if (!getApplication<Application>().filesDir.resolve("character.json").exists()) {
-            store.writeCharacter(LocalStore.emptyCharacter(trimmed))
-        }
-        refreshLocal()
-        _state.update { it.copy(displayName = trimmed, banner = "") }
-    }
-
-    fun logout() {
-        store.clearDisplayName()
-        queue.clear()
-        _state.update { it.copy(displayName = "", pending = null, lines = emptyList(), tab = "sheet") }
-    }
-
-    fun selectTab(tab: String) = _state.update { it.copy(tab = tab) }
-
-    fun setDraft(value: String) = _state.update { it.copy(draft = value) }
-
-    fun setBaseUrl(value: String) = _state.update { it.copy(baseUrl = value) }
-
-    fun setApiKey(value: String) = _state.update { it.copy(apiKey = value) }
-
-    fun setBookFilter(value: String) = _state.update { it.copy(bookFilter = value) }
-
-    fun setItemName(value: String) = _state.update { it.copy(itemName = value) }
-
-    fun saveConnection() {
-        val current = _state.value
         store.saveConnection(current.baseUrl, current.apiKey)
-        _state.update { it.copy(baseUrl = store.baseUrl(), banner = "Saved on this device") }
-    }
-
-    fun testHealth() {
-        saveConnection()
         viewModelScope.launch {
-            _state.update { it.copy(busy = true, health = "Checking…") }
-            val result = withContext(Dispatchers.IO) {
+            _state.update { it.copy(busy = true, banner = "") }
+            val error = withContext(Dispatchers.IO) {
                 try {
-                    hermes.health(store.baseUrl()).take(400)
+                    hermes.health(store.baseUrl())
+                    null
                 } catch (e: Exception) {
                     e.message ?: "Health check failed"
                 }
             }
-            _state.update { it.copy(busy = false, health = result) }
+            if (error != null) {
+                _state.update { it.copy(busy = false, connected = false, banner = error) }
+            } else {
+                if (!getApplication<Application>().filesDir.resolve("character.json").exists()) {
+                    store.writeCharacter(LocalStore.emptyCharacter("Adventurer"))
+                }
+                _state.update {
+                    it.copy(
+                        busy = false,
+                        connected = true,
+                        banner = "",
+                        baseUrl = store.baseUrl(),
+                        character = store.character(),
+                        book = store.book(),
+                        sheetTick = it.sheetTick + 1,
+                        tab = "chat",
+                    )
+                }
+            }
         }
     }
 
-    fun updateAbility(key: String, raw: String) {
-        val score = raw.toIntOrNull() ?: return
-        val doc = store.character()
-        doc.getJSONObject("document").getJSONObject("abilities").put(key, score.coerceIn(1, 30))
-        store.writeCharacter(doc)
-        refreshLocal()
-    }
-
-    fun updateIdentity(name: String, speciesId: String, classId: String, subclassId: String) {
-        val doc = store.character()
-        doc.put("name", name.take(120))
-        val document = doc.getJSONObject("document")
-        if (speciesId.isNotBlank()) document.put("speciesId", speciesId)
-        val classes = document.optJSONArray("classes") ?: JSONArray()
-        val row = if (classes.length() == 0) JSONObject().put("level", 1) else classes.getJSONObject(0)
-        if (classId.isNotBlank()) row.put("classId", classId)
-        if (subclassId.isBlank()) row.remove("subclassId") else row.put("subclassId", subclassId)
-        if (classes.length() == 0) classes.put(row)
-        document.put("classes", classes)
-        store.writeCharacter(doc)
-        refreshLocal()
-    }
-
-    fun addInventoryFromField() {
-        val name = _state.value.itemName.trim()
-        if (name.isEmpty()) return
-        val doc = store.character()
-        val items = doc.getJSONObject("document").optJSONArray("items") ?: JSONArray()
-        items.put(JSONObject().put("name", name).put("quantity", 1).put("equipped", false).put("attuned", false))
-        doc.getJSONObject("document").put("items", items)
-        store.writeCharacter(doc)
-        _state.update { it.copy(itemName = "") }
-        refreshLocal()
-    }
-
     fun sendChat() {
-        val text = _state.value.draft.trim()
-        if (text.isEmpty() || _state.value.busy) return
-        val history = _state.value.lines + ChatLine("user", text)
+        val current = _state.value
+        val text = current.draft.trim()
+        if (text.isEmpty() || current.busy) return
+        if (current.audience == "whisper" && current.whisperTo == null) {
+            _state.update { it.copy(banner = "Choose someone to whisper to") }
+            return
+        }
+        val whisper = if (current.audience == "whisper") current.whisperTo else null
+        val wire = SceneJson.playerContent(current.audience, whisper, text)
+        val history = current.lines + ChatLine("user", text, "You", wire)
         _state.update { it.copy(lines = history, draft = "", busy = true, banner = "") }
         viewModelScope.launch {
-            val reply = withContext(Dispatchers.IO) {
+            val raw = withContext(Dispatchers.IO) {
                 try {
-                    hermes.chat(store.baseUrl(), store.apiKey(), messagesPayload(history))
+                    hermes.chat(store.baseUrl(), store.apiKey(), messages(history))
                 } catch (e: Exception) {
                     "ERROR:" + (e.message ?: "Chat failed")
                 }
             }
-            if (reply.startsWith("ERROR:")) {
+            if (raw.startsWith("ERROR:")) {
                 _state.update {
-                    it.copy(
-                        busy = false,
-                        lines = history + ChatLine("error", reply.removePrefix("ERROR:")),
-                    )
+                    it.copy(busy = false, lines = history + ChatLine("error", raw.removePrefix("ERROR:"), "Error", raw))
                 }
                 return@launch
             }
-            val proposals = LocalStore.proposalsFrom(reply)
-            queue.clear()
-            queue.addAll(proposals)
+            val parsed = SceneJson.parseAssistant(raw)
+            val shown = if (parsed == null) raw else parsed.text.ifBlank { raw }
+            val speaker = parsed?.speakerName ?: "Umbra"
+            if (parsed != null) {
+                queue.clear()
+                queue.addAll(parsed.proposals)
+            }
             _state.update {
                 it.copy(
                     busy = false,
-                    lines = history + ChatLine("assistant", reply),
-                    pending = queue.removeFirstOrNull(),
+                    lines = history + ChatLine("assistant", shown, speaker, raw),
+                    present = parsed?.present ?: it.present,
+                    locationName = parsed?.locationName ?: it.locationName,
+                    pending = if (parsed == null) it.pending else queue.removeFirstOrNull(),
                 )
             }
         }
@@ -226,42 +235,169 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                 "Could not apply: ${e.message}"
             }
         }
-        refreshLocal()
         _state.update {
             it.copy(
                 banner = note,
                 pending = queue.removeFirstOrNull(),
+                character = store.character(),
+                book = store.book(),
+                sheetTick = it.sheetTick + 1,
             )
         }
     }
 
-    private fun messagesPayload(lines: List<ChatLine>): JSONArray {
+    fun saveIdentity(name: String, species: String, subspecies: String, background: String, classId: String, subclass: String, level: String, alignment: String) {
+        val doc = store.character()
+        doc.put("name", name.take(120).ifBlank { "Adventurer" })
+        val document = doc.getJSONObject("document")
+        if (species.isNotBlank()) document.put("speciesId", species) else document.remove("speciesId")
+        if (subspecies.isNotBlank()) document.put("subspeciesId", subspecies) else document.remove("subspeciesId")
+        if (background.isNotBlank()) document.put("backgroundId", background) else document.remove("backgroundId")
+        val details = document.optJSONObject("details") ?: JSONObject()
+        if (alignment.isBlank()) details.remove("alignment") else details.put("alignment", alignment.take(60))
+        document.put("details", details)
+        val classes = document.optJSONArray("classes") ?: JSONArray()
+        val row = if (classes.length() == 0) JSONObject().put("hitDiceSpent", 0) else classes.getJSONObject(0)
+        if (classId.isNotBlank()) row.put("classId", classId)
+        row.put("level", level.toIntOrNull()?.coerceIn(1, 20) ?: row.optInt("level", 1))
+        if (subclass.isBlank()) row.remove("subclassId") else row.put("subclassId", subclass)
+        if (classes.length() == 0) classes.put(row)
+        document.put("classes", classes)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun saveAbilities(scores: Map<String, String>) {
+        val doc = store.character()
+        val abilities = doc.getJSONObject("document").optJSONObject("abilities") ?: JSONObject()
+        for ((key, raw) in scores) {
+            val n = raw.toIntOrNull() ?: continue
+            abilities.put(key, n.coerceIn(1, 30))
+        }
+        doc.getJSONObject("document").put("abilities", abilities)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun toggleSkill(key: String, expertise: Boolean) {
+        val doc = store.character()
+        val document = doc.getJSONObject("document")
+        val field = if (expertise) "skillExpertise" else "skillProficiencies"
+        val array = document.optJSONArray(field) ?: JSONArray()
+        val values = (0 until array.length()).map { array.getString(it) }.toMutableList()
+        if (key in values) values.remove(key) else values.add(key)
+        document.put(field, JSONArray(values))
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun saveCombat(current: String, temp: String, hitDice: String, inspiration: Boolean, conditions: String) {
+        val doc = store.character()
+        val document = doc.getJSONObject("document")
+        val hp = document.optJSONObject("hp") ?: JSONObject()
+        val cur = current.toIntOrNull()
+        if (cur == null) hp.remove("current") else hp.put("current", cur)
+        hp.put("temp", temp.toIntOrNull()?.coerceAtLeast(0) ?: 0)
+        document.put("hp", hp)
+        val classes = document.optJSONArray("classes") ?: JSONArray()
+        if (classes.length() > 0) {
+            classes.getJSONObject(0).put("hitDiceSpent", hitDice.toIntOrNull()?.coerceAtLeast(0) ?: 0)
+        }
+        document.put("inspiration", inspiration)
+        val list = conditions.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        document.put("conditions", JSONArray(list))
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun addItem(name: String) {
+        if (name.isBlank()) return
+        val doc = store.character()
+        val items = doc.getJSONObject("document").optJSONArray("items") ?: JSONArray()
+        items.put(JSONObject().put("name", name.trim().take(160)).put("quantity", 1).put("equipped", false).put("attuned", false))
+        doc.getJSONObject("document").put("items", items)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun saveCoins(cp: String, sp: String, ep: String, gp: String, pp: String) {
+        val doc = store.character()
+        val currency = JSONObject()
+        for ((key, raw) in listOf("cp" to cp, "sp" to sp, "ep" to ep, "gp" to gp, "pp" to pp)) {
+            currency.put(key, raw.toIntOrNull()?.coerceAtLeast(0) ?: 0)
+        }
+        doc.getJSONObject("document").put("currency", currency)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun saveNotes(appearance: String, personality: String, ideals: String, bonds: String, flaws: String, backstory: String, notes: String) {
+        val doc = store.character()
+        val details = doc.getJSONObject("document").optJSONObject("details") ?: JSONObject()
+        fun put(key: String, value: String, max: Int) {
+            if (value.isBlank()) details.remove(key) else details.put(key, value.take(max))
+        }
+        put("appearance", appearance, 4000)
+        put("personalityTraits", personality, 2000)
+        put("ideals", ideals, 2000)
+        put("bonds", bonds, 2000)
+        put("flaws", flaws, 2000)
+        put("backstory", backstory, 20000)
+        put("notes", notes, 20000)
+        doc.getJSONObject("document").put("details", details)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun saveFeats(csv: String) {
+        val doc = store.character()
+        val ids = csv.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        doc.getJSONObject("document").put("featIds", JSONArray(ids))
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun addSpell(id: String) {
+        if (id.isBlank()) return
+        val doc = store.character()
+        val spells = doc.getJSONObject("document").optJSONArray("spells") ?: JSONArray()
+        spells.put(JSONObject().put("spellId", id.trim()).put("prepared", true).put("alwaysPrepared", false))
+        doc.getJSONObject("document").put("spells", spells)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    private fun bump() {
+        _state.update { it.copy(character = store.character(), book = store.book(), sheetTick = it.sheetTick + 1, banner = "Saved on this device") }
+    }
+
+    private fun messages(lines: List<ChatLine>): JSONArray {
         val array = JSONArray()
-        array.put(JSONObject().put("role", "system").put("content", GM_SYSTEM.trim()))
+        array.put(JSONObject().put("role", "system").put("content", SceneJson.SYSTEM.trim()))
         for (line in lines) {
             if (line.role == "user" || line.role == "assistant") {
-                array.put(JSONObject().put("role", line.role).put("content", line.text))
+                array.put(JSONObject().put("role", line.role).put("content", line.apiContent))
             }
         }
         return array
     }
-
-    private fun refreshLocal() {
-        _state.update { it.copy(character = store.character(), book = store.book()) }
-    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UmbraRoot(model: UmbraViewModel = viewModel()) {
     val state by model.state.collectAsState()
-    MaterialTheme {
-        if (state.displayName.isBlank()) {
-            LoginScreen(state.banner) { model.login(it) }
-            return@MaterialTheme
-        }
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            background = Ink,
+            surface = Card,
+            primary = Gold,
+            onPrimary = Color(0xFF1A140C),
+            onBackground = Color(0xFFF6F1E8),
+            onSurface = Color(0xFFF6F1E8),
+        ),
+    ) {
         val pending = state.pending
-        if (pending != null) {
+        if (pending != null && state.connected) {
             AlertDialog(
                 onDismissRequest = { model.resolveProposal(false) },
                 title = { Text(if (pending.kind == "book") "Write to the book?" else "Write to the sheet?") },
@@ -270,27 +406,24 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
                 dismissButton = { TextButton(onClick = { model.resolveProposal(false) }) { Text("No") } },
             )
         }
-        Scaffold(
-            topBar = { TopAppBar(title = { Text("Umbra") }) },
-            bottomBar = {
+        if (!state.connected) {
+            LoginScreen(state, model)
+            return@MaterialTheme
+        }
+        Scaffold(containerColor = Ink) { padding ->
+            Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    listOf("sheet" to "Sheet", "gm" to "GM", "book" to "Book", "settings" to "Settings").forEach { (id, label) ->
+                    listOf("chat" to "Chat", "sheet" to "Sheet", "compendium" to "Compendium").forEach { (id, label) ->
                         TextButton(onClick = { model.selectTab(id) }) {
-                            Text(if (state.tab == id) "[$label]" else label)
+                            Text(if (state.tab == id) label else label, color = if (state.tab == id) Gold else Muted)
                         }
                     }
                 }
-            },
-        ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-                if (state.banner.isNotBlank()) {
-                    Text(state.banner, color = MaterialTheme.colorScheme.primary)
-                }
+                if (state.banner.isNotBlank()) Text(state.banner, color = Gold)
                 when (state.tab) {
-                    "sheet" -> SheetScreen(state, model)
-                    "gm" -> GmScreen(state, model)
-                    "book" -> BookScreen(state, model)
-                    else -> SettingsScreen(state, model)
+                    "sheet" -> SheetScreen(state, model, Modifier.weight(1f))
+                    "compendium" -> CompendiumScreen(state, model, Modifier.weight(1f))
+                    else -> ChatScreen(state, model, Modifier.weight(1f))
                 }
             }
         }
@@ -298,147 +431,17 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
 }
 
 @Composable
-private fun LoginScreen(banner: String, onLogin: (String) -> Unit) {
-    var name by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
-    Scaffold { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text("Umbra", style = MaterialTheme.typography.headlineMedium)
-            Text("Local display name only. Nothing is sent to a login server.")
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Display name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            if (banner.isNotBlank()) Text(banner)
-            Button(onClick = { onLogin(name) }) { Text("Enter") }
-        }
-    }
-}
-
-@Composable
-private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel) {
-    val doc = state.character ?: return
-    val document = doc.getJSONObject("document")
-    val abilities = document.getJSONObject("abilities")
-    val classes = document.getJSONArray("classes").getJSONObject(0)
-    var name by androidx.compose.runtime.remember(doc.toString()) { androidx.compose.runtime.mutableStateOf(doc.optString("name")) }
-    var species by androidx.compose.runtime.remember(doc.toString()) {
-        androidx.compose.runtime.mutableStateOf(document.optString("speciesId"))
-    }
-    var classId by androidx.compose.runtime.remember(doc.toString()) {
-        androidx.compose.runtime.mutableStateOf(classes.optString("classId"))
-    }
-    var subclass by androidx.compose.runtime.remember(doc.toString()) {
-        androidx.compose.runtime.mutableStateOf(classes.optString("subclassId"))
-    }
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item {
-            Text("Character", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(species, { species = it }, label = { Text("Species id") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(classId, { classId = it }, label = { Text("Class id") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(subclass, { subclass = it }, label = { Text("Subclass id") }, modifier = Modifier.fillMaxWidth())
-            Button(onClick = { model.updateIdentity(name, species, classId, subclass) }) { Text("Save identity") }
-        }
-        items(listOf("str", "dex", "con", "int", "wis", "cha")) { key ->
-            AbilityRow(key, abilities.optInt(key, 10), model)
-        }
-        item {
-            Text("Inventory", style = MaterialTheme.typography.titleMedium)
-            val itemsJson = document.optJSONArray("items") ?: JSONArray()
-            for (i in 0 until itemsJson.length()) {
-                val item = itemsJson.getJSONObject(i)
-                Text("${item.optInt("quantity", 1)} × ${item.optString("name")}")
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    state.itemName,
-                    model::setItemName,
-                    label = { Text("Add item") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                )
-                Button(onClick = { model.addInventoryFromField() }) { Text("Add") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AbilityRow(key: String, score: Int, model: UmbraViewModel) {
-    var text by androidx.compose.runtime.remember(key, score) { androidx.compose.runtime.mutableStateOf(score.toString()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it.filter { ch -> ch.isDigit() }.take(2)
-            model.updateAbility(key, text)
-        },
-        label = { Text(key.uppercase()) },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-    )
-}
-
-@Composable
-private fun GmScreen(state: UmbraUiState, model: UmbraViewModel) {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 8.dp)) {
-            items(state.lines) { line ->
-                val label = when (line.role) {
-                    "user" -> "You"
-                    "assistant" -> "GM"
-                    else -> "Error"
-                }
-                Text("$label: ${line.text}", modifier = Modifier.padding(vertical = 4.dp))
-            }
-        }
-        OutlinedTextField(
-            value = state.draft,
-            onValueChange = model::setDraft,
-            label = { Text("Message") },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Button(onClick = { model.sendChat() }, enabled = !state.busy) {
-            Text(if (state.busy) "Sending…" else "Send")
-        }
-    }
-}
-
-@Composable
-private fun BookScreen(state: UmbraUiState, model: UmbraViewModel) {
-    val book = state.book ?: return
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("species", "classes", "subclasses", "monsters", "encounters").forEach { key ->
-                FilterChip(
-                    selected = state.bookFilter == key,
-                    onClick = { model.setBookFilter(key) },
-                    label = { Text(key) },
-                )
-            }
-        }
-        val array = book.optJSONArray(state.bookFilter) ?: JSONArray()
-        LazyColumn {
-            items(array.length()) { index ->
-                val obj = array.getJSONObject(index)
-                Text(obj.optString("name") + "  " + obj.optString("id"), modifier = Modifier.padding(vertical = 4.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsScreen(state: UmbraUiState, model: UmbraViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
+    Column(
+        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("Umbra", style = MaterialTheme.typography.displaySmall, color = Gold)
+        Text("The table is listening.", color = Muted)
         OutlinedTextField(
             state.baseUrl,
             model::setBaseUrl,
-            label = { Text("Hermes base URL") },
+            label = { Text("Base URL") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -450,12 +453,291 @@ private fun SettingsScreen(state: UmbraUiState, model: UmbraViewModel) {
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { model.saveConnection() }) { Text("Save") }
-            Button(onClick = { model.testHealth() }, enabled = !state.busy) { Text("Test /health") }
-        }
-        if (state.health.isNotBlank()) Text(state.health)
-        Text("Image generation and Google API: not connected yet.")
-        TextButton(onClick = { model.logout() }) { Text("Log out") }
+        Button(
+            onClick = { model.checkConnection() },
+            enabled = !state.busy,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF1A140C)),
+        ) { Text(if (state.busy) "Checking…" else "Check connection") }
+        if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFF6F1E8))
+        Text("Checks GET /health. No username or password.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        Text("Image generation and Google API: not connected yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
     }
+}
+
+@Composable
+private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).padding(0.dp)) {
+            Text(state.locationName, color = Color(0xFFF6F1E8), style = MaterialTheme.typography.titleMedium)
+            Box(
+                Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF4A3F34), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center,
+            ) { Text("Scene", color = Faint) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Audiences.forEach { (id, label) ->
+                FilterChip(selected = state.audience == id, onClick = { model.setAudience(id) }, label = { Text(label) })
+            }
+        }
+        val speaking = when (state.audience) {
+            "umbra" -> "Speaking to Umbra"
+            "group" -> "Speaking to Group"
+            "area" -> "Speaking to Area"
+            "whisper" -> state.whisperTo?.let { "Whispering to ${it.name}" } ?: "Choose someone to whisper to"
+            else -> "Speaking"
+        }
+        Text(speaking, color = Gold, style = MaterialTheme.typography.labelLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            if (state.present.isEmpty()) {
+                Text("No one in the scene yet.", color = Faint)
+            }
+            state.present.forEach { person ->
+                val selected = state.whisperTo?.id == person.id && state.audience == "whisper"
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { model.selectWhisper(person) },
+                ) {
+                    Portrait(if (selected) Gold else Color(0xFF4A3F34))
+                    Text(person.name, color = Color(0xFFF6F1E8), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(state.lines) { line ->
+                if (line.role == "user") {
+                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                        Text(line.text, color = Color(0xFFF6F1E8), modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(Player).padding(10.dp))
+                    }
+                } else {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Portrait(Color(0xFF4A3F34), 28)
+                            Text(line.speaker, color = Gold, style = MaterialTheme.typography.labelLarge)
+                        }
+                        Text(line.text, color = Color(0xFFF6F1E8))
+                    }
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(state.draft, model::setDraft, label = { Text("Message the table") }, modifier = Modifier.weight(1f))
+            Button(onClick = { model.sendChat() }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF1A140C))) {
+                Text(if (state.busy) "…" else "Send")
+            }
+        }
+        TextButton(onClick = { model.disconnect() }) { Text("Connection") }
+    }
+}
+
+@Composable
+private fun Portrait(border: Color, size: Int = 44) {
+    Box(
+        Modifier.size(size.dp).clip(CircleShape).border(1.dp, border, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) { Text("Img", color = Faint, style = MaterialTheme.typography.labelSmall) }
+}
+
+@Composable
+private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) {
+    val doc = state.character ?: return
+    val document = doc.getJSONObject("document")
+    val details = document.optJSONObject("details") ?: JSONObject()
+    val abilities = document.optJSONObject("abilities") ?: JSONObject()
+    val classes = document.optJSONArray("classes")
+    val first = if (classes != null && classes.length() > 0) classes.getJSONObject(0) else JSONObject()
+    val hp = document.optJSONObject("hp") ?: JSONObject()
+    val currency = document.optJSONObject("currency") ?: JSONObject()
+    val tick = state.sheetTick
+    var name by remember(tick) { mutableStateOf(doc.optString("name")) }
+    var species by remember(tick) { mutableStateOf(document.optString("speciesId")) }
+    var subspecies by remember(tick) { mutableStateOf(document.optString("subspeciesId")) }
+    var background by remember(tick) { mutableStateOf(document.optString("backgroundId")) }
+    var classId by remember(tick) { mutableStateOf(first.optString("classId")) }
+    var subclass by remember(tick) { mutableStateOf(first.optString("subclassId")) }
+    var level by remember(tick) { mutableStateOf(first.optInt("level", 1).toString()) }
+    var alignment by remember(tick) { mutableStateOf(details.optString("alignment")) }
+    val abilityState = remember(tick) {
+        listOf("str", "dex", "con", "int", "wis", "cha").associateWith { mutableStateOf(abilities.optInt(it, 10).toString()) }
+    }
+    var hpCurrent by remember(tick) { mutableStateOf(if (hp.has("current")) hp.optInt("current").toString() else "") }
+    var hpTemp by remember(tick) { mutableStateOf(hp.optInt("temp", 0).toString()) }
+    var hitDice by remember(tick) { mutableStateOf(first.optInt("hitDiceSpent", 0).toString()) }
+    var inspiration by remember(tick) { mutableStateOf(document.optBoolean("inspiration", false)) }
+    var conditions by remember(tick) { mutableStateOf(jsonStrings(document.optJSONArray("conditions")).joinToString(", ")) }
+    var itemName by remember(tick) { mutableStateOf("") }
+    var cp by remember(tick) { mutableStateOf(currency.optInt("cp", 0).toString()) }
+    var sp by remember(tick) { mutableStateOf(currency.optInt("sp", 0).toString()) }
+    var ep by remember(tick) { mutableStateOf(currency.optInt("ep", 0).toString()) }
+    var gp by remember(tick) { mutableStateOf(currency.optInt("gp", 0).toString()) }
+    var pp by remember(tick) { mutableStateOf(currency.optInt("pp", 0).toString()) }
+    var appearance by remember(tick) { mutableStateOf(details.optString("appearance")) }
+    var personality by remember(tick) { mutableStateOf(details.optString("personalityTraits")) }
+    var ideals by remember(tick) { mutableStateOf(details.optString("ideals")) }
+    var bonds by remember(tick) { mutableStateOf(details.optString("bonds")) }
+    var flaws by remember(tick) { mutableStateOf(details.optString("flaws")) }
+    var backstory by remember(tick) { mutableStateOf(details.optString("backstory")) }
+    var notes by remember(tick) { mutableStateOf(details.optString("notes")) }
+    var feats by remember(tick) { mutableStateOf(jsonStrings(document.optJSONArray("featIds")).joinToString(", ")) }
+    var spellId by remember(tick) { mutableStateOf("") }
+    val proficient = jsonStrings(document.optJSONArray("skillProficiencies")).toSet()
+    val expert = jsonStrings(document.optJSONArray("skillExpertise")).toSet()
+
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Character", style = MaterialTheme.typography.headlineMedium, color = Gold)
+        Text("Scroll for the full sheet", color = Faint, style = MaterialTheme.typography.bodySmall)
+        Section("Identity") {
+            SheetField("Name", name) { name = it }
+            SheetField("Species", species) { species = it }
+            SheetField("Subspecies", subspecies) { subspecies = it }
+            SheetField("Class", classId) { classId = it }
+            SheetField("Level", level) { level = it.filter { ch -> ch.isDigit() }.take(2) }
+            SheetField("Subclass", subclass) { subclass = it }
+            SheetField("Background", background) { background = it }
+            SheetField("Alignment", alignment) { alignment = it }
+            GoldButton("Save identity") { model.saveIdentity(name, species, subspecies, background, classId, subclass, level, alignment) }
+        }
+        Section("Abilities") {
+            listOf("str", "dex", "con", "int", "wis", "cha").forEach { key ->
+                var score by abilityState.getValue(key)
+                SheetField(key.uppercase(), score) { score = it.filter { ch -> ch.isDigit() }.take(2) }
+            }
+            GoldButton("Save abilities") { model.saveAbilities(abilityState.mapValues { it.value.value }) }
+        }
+        Section("Skills") {
+            Skills.forEach { (key, label) ->
+                val mark = when {
+                    key in expert -> "expertise"
+                    key in proficient -> "proficient"
+                    else -> "none"
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("$label · $mark", color = Color(0xFFF6F1E8))
+                    Row {
+                        TextButton(onClick = { model.toggleSkill(key, false) }) { Text("Prof") }
+                        TextButton(onClick = { model.toggleSkill(key, true) }) { Text("Exp") }
+                    }
+                }
+            }
+        }
+        Section("Combat") {
+            SheetField("Hit points", hpCurrent) { hpCurrent = it }
+            SheetField("Temporary HP", hpTemp) { hpTemp = it }
+            SheetField("Hit dice spent", hitDice) { hitDice = it }
+            SheetField("Conditions", conditions) { conditions = it }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(if (inspiration) "Inspiration: yes" else "Inspiration: no", color = Color(0xFFF6F1E8))
+                TextButton(onClick = { inspiration = !inspiration }) { Text("Toggle") }
+            }
+            Text("Armor class and speed are computed by the VTT engine and are not stored on the document.", color = Faint, style = MaterialTheme.typography.bodySmall)
+            GoldButton("Save combat") { model.saveCombat(hpCurrent, hpTemp, hitDice, inspiration, conditions) }
+        }
+        Section("Inventory") {
+            val itemsJson = document.optJSONArray("items") ?: JSONArray()
+            for (i in 0 until itemsJson.length()) {
+                val item = itemsJson.getJSONObject(i)
+                Text("${item.optInt("quantity", 1)} × ${item.optString("name")}", color = Color(0xFFF6F1E8))
+            }
+            SheetField("Add item", itemName) { itemName = it }
+            GoldButton("Add to inventory") { model.addItem(itemName) }
+            SheetField("cp", cp) { cp = it }
+            SheetField("sp", sp) { sp = it }
+            SheetField("ep", ep) { ep = it }
+            SheetField("gp", gp) { gp = it }
+            SheetField("pp", pp) { pp = it }
+            GoldButton("Save coins") { model.saveCoins(cp, sp, ep, gp, pp) }
+        }
+        Section("Features") {
+            SheetField("Feat ids", feats) { feats = it }
+            GoldButton("Save feats") { model.saveFeats(feats) }
+            Text("Class features stay on the class in the compendium. The sheet stores the class, subclass, and feat ids.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        }
+        Section("Spells") {
+            val spells = document.optJSONArray("spells") ?: JSONArray()
+            for (i in 0 until spells.length()) {
+                val spell = spells.getJSONObject(i)
+                val prepared = if (spell.optBoolean("prepared")) "prepared" else "known"
+                Text("${spell.optString("spellId")} · $prepared", color = Color(0xFFF6F1E8))
+            }
+            SheetField("Add spell id", spellId) { spellId = it }
+            GoldButton("Add spell") { model.addSpell(spellId) }
+        }
+        Section("Notes") {
+            SheetField("Appearance", appearance) { appearance = it }
+            SheetField("Personality", personality) { personality = it }
+            SheetField("Ideals", ideals) { ideals = it }
+            SheetField("Bonds", bonds) { bonds = it }
+            SheetField("Flaws", flaws) { flaws = it }
+            SheetField("Backstory", backstory) { backstory = it }
+            SheetField("Notes", notes) { notes = it }
+            GoldButton("Save notes") {
+                model.saveNotes(appearance, personality, ideals, bonds, flaws, backstory, notes)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompendiumScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) {
+    val book = state.book
+    val categories = listOf("species", "classes", "subclasses", "items", "monsters")
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Compendium", style = MaterialTheme.typography.headlineMedium, color = Gold)
+        Text("Browse only", color = Faint)
+        OutlinedTextField(state.compendiumQuery, model::setQuery, label = { Text("Search") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+            categories.forEach { key ->
+                FilterChip(selected = state.compendiumCategory == key, onClick = { model.setCategory(key) }, label = { Text(key) })
+            }
+        }
+        val matches = remember(book, state.compendiumCategory, state.compendiumQuery) {
+            val array = book?.optJSONArray(state.compendiumCategory) ?: JSONArray()
+            val q = state.compendiumQuery.trim().lowercase()
+            (0 until array.length()).map { array.getJSONObject(it) }.filter { obj ->
+                q.isEmpty() || obj.optString("name").lowercase().contains(q) || obj.optString("id").lowercase().contains(q)
+            }
+        }
+        LazyColumn(Modifier.weight(1f)) {
+            items(matches, key = { it.optString("id") + it.optString("name") }) { obj ->
+                Column(
+                    Modifier.fillMaxWidth().clickable { model.selectEntry(obj.optString("id")) }.padding(vertical = 6.dp),
+                ) {
+                    Text(obj.optString("name"), color = Color(0xFFF6F1E8))
+                    Text(obj.optString("id"), color = Faint, style = MaterialTheme.typography.bodySmall)
+                    if (state.compendiumId == obj.optString("id")) {
+                        Text(obj.optString("description").ifBlank { "No description stored." }, color = Muted)
+                        Text("Read only. No edit, create, or delete.", color = Faint, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Section(title: String, content: @Composable () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Card).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(title, color = Gold, style = MaterialTheme.typography.titleMedium)
+        content()
+    }
+}
+
+@Composable
+private fun SheetField(label: String, value: String, onChange: (String) -> Unit) {
+    OutlinedTextField(value, onChange, label = { Text(label) }, modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
+private fun GoldButton(label: String, onClick: () -> Unit) {
+    Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF1A140C))) {
+        Text(label)
+    }
+}
+
+private fun jsonStrings(array: JSONArray?): List<String> {
+    if (array == null) return emptyList()
+    return (0 until array.length()).mapNotNull { index -> array.optString(index).takeIf { it.isNotBlank() } }
 }
