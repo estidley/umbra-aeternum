@@ -10,9 +10,9 @@ This repository is a **reusable process template**, not an application. Clone it
 
 | Field | Value |
 | --- | --- |
-| **Name** | _TBD — lock in `decisions/CURRENT.md`_ |
+| **Name** | **Umbra** |
 | **Owner** | Ethan Stidley (`estidley`) |
-| **Deployment kind** | **`app-web`** (default) |
+| **Deployment kind** | **`app-web`** (process docs only; this slice is native Android, not a web app) |
 | **Current phase** | **A1** |
 | **Phase file** | [`decisions/phases/A-foundation.md`](./decisions/phases/A-foundation.md) |
 

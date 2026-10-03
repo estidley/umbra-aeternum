@@ -25,6 +25,17 @@ Keep messages short. Decisions live in `decisions/`, not here.
 
 ---
 
+## 2026-10-03 — Umbra Android client
+
+| Field | Value |
+| --- | --- |
+| Date | 2026-10-03 |
+| From | Ched |
+| To | Webb + Fred |
+| Status | open |
+| Phase | A1 |
+| Message | Native Umbra client on `local/umbra-android` (not merged). Debug APK only. No Railway, no Hermes server, no Expo. Local display-name login (nothing sent). Hermes: GET /health and POST /v1/chat/completions with Bearer key, body model `hermes` plus session messages (plus one local system line that describes the proposal fence). Assistant text is choices[0].message.content. Proposals are a fenced json block with proposals[].kind sheet or book, summary, target inventory/species/subclass/monster/encounter/sheet, and data. Yes is required before a write. Sheet shape from Aeternum-VTT character.ts at f0eafec; book seed is content/srd-5.1 only. VTT repo was not modified. Image generation / Google API is a not-connected stub. |
+
 ## 2026-09-20 — app-web default shifted to Railway + Resend
 
 | Field | Value |

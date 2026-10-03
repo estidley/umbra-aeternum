@@ -15,6 +15,16 @@ Entry shape:
 
 ---
 
+### 2026-10-03 — Umbra is a native Android client
+
+- **Context:** Ethan corrected the product away from a Hermes Phone chat app. Umbra is the 5e sheet plus an AI GM, on device, talking to a Hermes API Webb owns.
+- **Decision(s):**
+  1. Process deployment kind stays `app-web` and phase stays **A1** in PLAN / CURRENT so the playbook labels still apply. The implementation is native Kotlin, Material 3, minSdk 28. Not Expo. Not a web app. Not a Railway service.
+  2. No backend in this repo. Hermes base URL defaults to the placeholder `https://hermes.example.invalid` and can be overridden on device. API keys never enter git.
+  3. Character document shape is copied from Aeternum-VTT `characterDocument` plus the `vtt.character.v1` file wrapper. Book seed is SRD 5.1 only.
+- **Why:** The phone is a client. The VTT repo stays the source of the sheet shape and must not be modified from this work.
+- **Implications:** Do not add Expo, Figma, Railway, or a login API. AI writes to the sheet or book only after a yes/no confirm. Image generation and Google API stay disconnected.
+
 ### 2026-09-20 — app-web default is Railway + Resend (Bragline-derived)
 
 - **Context:** New products were still templated on Azure Container Apps / Flexible Server / ACS Email / Blob / Key Vault. Bragline already ships on Railway + Resend; the playbook lagged that live path.

@@ -1,0 +1,5 @@
+Seed book data copied read-only from estidley/Aeternum-VTT at f0eafec51790737e05bd6f5f52e892e4bbd4f80c.
+Files: content/srd-5.1/species.json, classes.json, monsters.json, features.json (subclass entities only are loaded), items.json.
+License on those entities is ogl-1.0a (SRD 5.1). Non-SRD homebrew packs in the VTT repo were not copied.
+Character document shape follows packages/shared/src/content/character.ts (characterDocument) plus the file wrapper in apps/web/src/characters/characterFile.ts (format vtt.character.v1, name, document).
+Encounter rows follow packages/shared/src/encounterIo.ts encounterIoItemSchema.

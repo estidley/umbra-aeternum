@@ -1,0 +1,2040 @@
+{
+  "id": "srd-5.1",
+  "name": "SRD 5.1",
+  "edition": "2014",
+  "version": "1.0.0",
+  "source": {
+    "name": "SRD 5.1",
+    "license": "ogl-1.0a"
+  },
+  "visibility": "public",
+  "entities": [
+    {
+      "kind": "class",
+      "id": "srd.class.barbarian",
+      "name": "Barbarian",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A fierce warrior of primitive background who can enter a battle rage.",
+      "hitDie": 12,
+      "primaryAbility": [
+        "str"
+      ],
+      "savingThrows": [
+        "str",
+        "con"
+      ],
+      "subclassLevel": 3,
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.barbarian.feature.rage",
+            "srd.class.barbarian.feature.unarmored-defense"
+          ],
+          "columns": {
+            "rages": 2,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.barbarian.feature.reckless-attack",
+            "srd.class.barbarian.feature.danger-sense"
+          ],
+          "columns": {
+            "rages": 2,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 3,
+          "featureIds": [
+            "srd.class.barbarian.feature.primal-path"
+          ],
+          "columns": {
+            "rages": 3,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "rages": 3,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.barbarian.feature.extra-attack",
+            "srd.class.barbarian.feature.fast-movement"
+          ],
+          "columns": {
+            "rages": 3,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 6,
+          "featureIds": [],
+          "columns": {
+            "rages": 4,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 7,
+          "featureIds": [
+            "srd.class.barbarian.feature.feral-instinct"
+          ],
+          "columns": {
+            "rages": 4,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "rages": 4,
+            "rageDamage": 2
+          }
+        },
+        {
+          "level": 9,
+          "featureIds": [
+            "srd.class.barbarian.feature.brutal-critical"
+          ],
+          "columns": {
+            "rages": 4,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 10,
+          "featureIds": [],
+          "columns": {
+            "rages": 4,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 11,
+          "featureIds": [
+            "srd.class.barbarian.feature.relentless-rage"
+          ],
+          "columns": {
+            "rages": 4,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "rages": 5,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 13,
+          "featureIds": [
+            "srd.class.barbarian.feature.brutal-critical"
+          ],
+          "columns": {
+            "rages": 5,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 14,
+          "featureIds": [],
+          "columns": {
+            "rages": 5,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 15,
+          "featureIds": [
+            "srd.class.barbarian.feature.persistent-rage"
+          ],
+          "columns": {
+            "rages": 5,
+            "rageDamage": 3
+          }
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "rages": 5,
+            "rageDamage": 4
+          }
+        },
+        {
+          "level": 17,
+          "featureIds": [
+            "srd.class.barbarian.feature.brutal-critical"
+          ],
+          "columns": {
+            "rages": 6,
+            "rageDamage": 4
+          }
+        },
+        {
+          "level": 18,
+          "featureIds": [
+            "srd.class.barbarian.feature.indomitable-might"
+          ],
+          "columns": {
+            "rages": 6,
+            "rageDamage": 4
+          }
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "rages": 6,
+            "rageDamage": 4
+          }
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.barbarian.feature.primal-champion"
+          ],
+          "columns": {
+            "rages": 99,
+            "rageDamage": 4
+          }
+        }
+      ],
+      "proficiencies": {
+        "armor": [
+          "light armor",
+          "medium armor",
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons",
+          "martial weapons"
+        ],
+        "tools": []
+      },
+      "skillChoices": {
+        "count": 2,
+        "from": [
+          "animalhandling",
+          "athletics",
+          "intimidation",
+          "nature",
+          "perception",
+          "survival"
+        ]
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "str": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons",
+          "martial weapons"
+        ],
+        "tools": [],
+        "skillCount": 0
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.fighter",
+      "name": "Fighter",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A master of martial combat, skilled with a variety of weapons and armor.",
+      "hitDie": 10,
+      "primaryAbility": [
+        "str",
+        "dex"
+      ],
+      "savingThrows": [
+        "str",
+        "con"
+      ],
+      "subclassLevel": 3,
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.fighter.feature.fighting-style",
+            "srd.class.fighter.feature.second-wind"
+          ]
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.fighter.feature.action-surge"
+          ]
+        },
+        {
+          "level": 3,
+          "featureIds": [
+            "srd.class.fighter.feature.martial-archetype"
+          ]
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.fighter.feature.extra-attack"
+          ]
+        },
+        {
+          "level": 6,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 7,
+          "featureIds": []
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 9,
+          "featureIds": [
+            "srd.class.fighter.feature.indomitable"
+          ]
+        },
+        {
+          "level": 10,
+          "featureIds": []
+        },
+        {
+          "level": 11,
+          "featureIds": [
+            "srd.class.fighter.feature.extra-attack"
+          ]
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 13,
+          "featureIds": [
+            "srd.class.fighter.feature.indomitable"
+          ]
+        },
+        {
+          "level": 14,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 15,
+          "featureIds": []
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 17,
+          "featureIds": [
+            "srd.class.fighter.feature.action-surge",
+            "srd.class.fighter.feature.indomitable"
+          ]
+        },
+        {
+          "level": 18,
+          "featureIds": []
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.fighter.feature.extra-attack"
+          ]
+        }
+      ],
+      "proficiencies": {
+        "armor": [
+          "all armor",
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons",
+          "martial weapons"
+        ],
+        "tools": []
+      },
+      "skillChoices": {
+        "count": 2,
+        "from": [
+          "acrobatics",
+          "animalhandling",
+          "athletics",
+          "history",
+          "insight",
+          "intimidation",
+          "perception",
+          "survival"
+        ]
+      },
+      "startingEquipment": {
+        "packages": [
+          {
+            "id": "fighter-a",
+            "label": "Chain mail, martial weapon, shield, light crossbow",
+            "items": [
+              {
+                "itemId": "srd.item.chain-mail",
+                "name": "Chain Mail",
+                "quantity": 1,
+                "equipped": true
+              },
+              {
+                "itemId": "srd.item.longsword",
+                "name": "Longsword",
+                "quantity": 1,
+                "equipped": true
+              },
+              {
+                "itemId": "srd.item.shield",
+                "name": "Shield",
+                "quantity": 1,
+                "equipped": true
+              }
+            ]
+          },
+          {
+            "id": "fighter-b",
+            "label": "Leather, longbow, martial weapon",
+            "items": [
+              {
+                "itemId": "srd.item.leather-armor",
+                "name": "Leather Armor",
+                "quantity": 1,
+                "equipped": true
+              },
+              {
+                "itemId": "srd.item.longbow",
+                "name": "Longbow",
+                "quantity": 1,
+                "equipped": true
+              },
+              {
+                "itemId": "srd.item.longsword",
+                "name": "Longsword",
+                "quantity": 1,
+                "equipped": true
+              }
+            ]
+          }
+        ],
+        "goldAlternative": {
+          "dice": "5d4",
+          "multiplier": 10
+        }
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "str": 13
+          }
+        },
+        {
+          "abilities": {
+            "dex": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [
+          "light armor",
+          "medium armor",
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons",
+          "martial weapons"
+        ],
+        "tools": [],
+        "skillCount": 0
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.rogue",
+      "name": "Rogue",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A scoundrel who uses stealth and trickery to overcome obstacles and enemies.",
+      "hitDie": 8,
+      "primaryAbility": [
+        "dex"
+      ],
+      "savingThrows": [
+        "dex",
+        "int"
+      ],
+      "subclassLevel": 3,
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.rogue.feature.expertise",
+            "srd.class.rogue.feature.sneak-attack",
+            "srd.class.rogue.feature.thieves-cant"
+          ],
+          "columns": {
+            "sneakAttackDice": "1d6"
+          }
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.rogue.feature.cunning-action"
+          ],
+          "columns": {
+            "sneakAttackDice": "1d6"
+          }
+        },
+        {
+          "level": 3,
+          "featureIds": [
+            "srd.class.rogue.feature.roguish-archetype"
+          ],
+          "columns": {
+            "sneakAttackDice": "2d6"
+          }
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "sneakAttackDice": "2d6"
+          }
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.rogue.feature.uncanny-dodge"
+          ],
+          "columns": {
+            "sneakAttackDice": "3d6"
+          }
+        },
+        {
+          "level": 6,
+          "featureIds": [
+            "srd.class.rogue.feature.expertise"
+          ],
+          "columns": {
+            "sneakAttackDice": "3d6"
+          }
+        },
+        {
+          "level": 7,
+          "featureIds": [
+            "srd.class.rogue.feature.evasion"
+          ],
+          "columns": {
+            "sneakAttackDice": "4d6"
+          }
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "sneakAttackDice": "4d6"
+          }
+        },
+        {
+          "level": 9,
+          "featureIds": [],
+          "columns": {
+            "sneakAttackDice": "5d6"
+          }
+        },
+        {
+          "level": 10,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "sneakAttackDice": "5d6"
+          }
+        },
+        {
+          "level": 11,
+          "featureIds": [
+            "srd.class.rogue.feature.reliable-talent"
+          ],
+          "columns": {
+            "sneakAttackDice": "6d6"
+          }
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "sneakAttackDice": "6d6"
+          }
+        },
+        {
+          "level": 13,
+          "featureIds": [],
+          "columns": {
+            "sneakAttackDice": "7d6"
+          }
+        },
+        {
+          "level": 14,
+          "featureIds": [
+            "srd.class.rogue.feature.blindsense"
+          ],
+          "columns": {
+            "sneakAttackDice": "7d6"
+          }
+        },
+        {
+          "level": 15,
+          "featureIds": [
+            "srd.class.rogue.feature.slippery-mind"
+          ],
+          "columns": {
+            "sneakAttackDice": "8d6"
+          }
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "sneakAttackDice": "8d6"
+          }
+        },
+        {
+          "level": 17,
+          "featureIds": [],
+          "columns": {
+            "sneakAttackDice": "9d6"
+          }
+        },
+        {
+          "level": 18,
+          "featureIds": [
+            "srd.class.rogue.feature.elusive"
+          ],
+          "columns": {
+            "sneakAttackDice": "9d6"
+          }
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "sneakAttackDice": "10d6"
+          }
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.rogue.feature.stroke-of-luck"
+          ],
+          "columns": {
+            "sneakAttackDice": "10d6"
+          }
+        }
+      ],
+      "proficiencies": {
+        "armor": [
+          "light armor"
+        ],
+        "weapons": [
+          "simple weapons",
+          "hand crossbows",
+          "longswords",
+          "rapiers",
+          "shortswords"
+        ],
+        "tools": [
+          "thieves' tools"
+        ]
+      },
+      "skillChoices": {
+        "count": 4,
+        "from": [
+          "acrobatics",
+          "athletics",
+          "deception",
+          "insight",
+          "intimidation",
+          "investigation",
+          "perception",
+          "performance",
+          "persuasion",
+          "sleightofhand",
+          "stealth"
+        ]
+      },
+      "startingEquipment": {
+        "packages": [
+          {
+            "id": "rogue-a",
+            "label": "Rapier, shortbow, leather armor",
+            "items": [
+              {
+                "itemId": "srd.item.rapier",
+                "name": "Rapier",
+                "quantity": 1,
+                "equipped": true
+              },
+              {
+                "itemId": "srd.item.shortbow",
+                "name": "Shortbow",
+                "quantity": 1,
+                "equipped": true
+              },
+              {
+                "itemId": "srd.item.leather-armor",
+                "name": "Leather Armor",
+                "quantity": 1,
+                "equipped": true
+              }
+            ]
+          }
+        ],
+        "goldAlternative": {
+          "dice": "4d4",
+          "multiplier": 10
+        }
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "dex": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [
+          "light armor"
+        ],
+        "weapons": [],
+        "tools": [
+          "thieves' tools"
+        ],
+        "skillCount": 1
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.wizard",
+      "name": "Wizard",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A scholarly magic-user capable of manipulating the structures of reality.",
+      "hitDie": 6,
+      "primaryAbility": [
+        "int"
+      ],
+      "savingThrows": [
+        "int",
+        "wis"
+      ],
+      "subclassLevel": 2,
+      "spellcasting": {
+        "ability": "int",
+        "preparation": "spellbook",
+        "ritual": true,
+        "progression": "full"
+      },
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.wizard.feature.spellcasting",
+            "srd.class.wizard.feature.arcane-recovery"
+          ],
+          "columns": {
+            "cantripsKnown": 3
+          }
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.wizard.feature.arcane-tradition"
+          ],
+          "columns": {
+            "cantripsKnown": 3
+          }
+        },
+        {
+          "level": 3,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 3
+          }
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 5,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 6,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 7,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 9,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 10,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 11,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 13,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 14,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 15,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 17,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 18,
+          "featureIds": [
+            "srd.class.wizard.feature.spell-mastery"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.wizard.feature.signature-spells"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        }
+      ],
+      "proficiencies": {
+        "armor": [],
+        "weapons": [
+          "daggers",
+          "darts",
+          "slings",
+          "quarterstaffs",
+          "light crossbows"
+        ],
+        "tools": []
+      },
+      "skillChoices": {
+        "count": 2,
+        "from": [
+          "arcana",
+          "history",
+          "insight",
+          "investigation",
+          "medicine",
+          "religion"
+        ]
+      },
+      "startingEquipment": {
+        "packages": [
+          {
+            "id": "wizard-a",
+            "label": "Quarterstaff and component pouch kit",
+            "items": [
+              {
+                "itemId": "srd.item.quarterstaff",
+                "name": "Quarterstaff",
+                "quantity": 1,
+                "equipped": true
+              }
+            ]
+          }
+        ],
+        "goldAlternative": {
+          "dice": "4d4",
+          "multiplier": 10
+        }
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "int": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [],
+        "weapons": [],
+        "tools": [],
+        "skillCount": 0
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.cleric",
+      "name": "Cleric",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A priestly champion who wields divine magic in service of a higher power.",
+      "hitDie": 8,
+      "primaryAbility": [
+        "wis"
+      ],
+      "savingThrows": [
+        "wis",
+        "cha"
+      ],
+      "subclassLevel": 1,
+      "spellcasting": {
+        "ability": "wis",
+        "preparation": "prepared",
+        "ritual": true,
+        "progression": "full"
+      },
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.cleric.feature.spellcasting",
+            "srd.class.cleric.feature.divine-domain"
+          ],
+          "columns": {
+            "cantripsKnown": 3
+          }
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.cleric.feature.channel-divinity"
+          ],
+          "columns": {
+            "cantripsKnown": 3
+          }
+        },
+        {
+          "level": 3,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 3
+          }
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.cleric.feature.destroy-undead"
+          ],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 6,
+          "featureIds": [
+            "srd.class.cleric.feature.channel-divinity"
+          ],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 7,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement",
+            "srd.class.cleric.feature.destroy-undead"
+          ],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 9,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4
+          }
+        },
+        {
+          "level": 10,
+          "featureIds": [
+            "srd.class.cleric.feature.divine-intervention"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 11,
+          "featureIds": [
+            "srd.class.cleric.feature.destroy-undead"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 13,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 14,
+          "featureIds": [
+            "srd.class.cleric.feature.destroy-undead"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 15,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 17,
+          "featureIds": [
+            "srd.class.cleric.feature.destroy-undead"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 18,
+          "featureIds": [
+            "srd.class.cleric.feature.channel-divinity"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.cleric.feature.divine-intervention"
+          ],
+          "columns": {
+            "cantripsKnown": 5
+          }
+        }
+      ],
+      "proficiencies": {
+        "armor": [
+          "light armor",
+          "medium armor",
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons"
+        ],
+        "tools": []
+      },
+      "skillChoices": {
+        "count": 2,
+        "from": [
+          "history",
+          "insight",
+          "medicine",
+          "persuasion",
+          "religion"
+        ]
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "wis": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [
+          "light armor",
+          "medium armor",
+          "shields"
+        ],
+        "weapons": [],
+        "tools": [],
+        "skillCount": 0
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.monk",
+      "name": "Monk",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A master of martial arts, harnessing the power of the body in pursuit of physical and spiritual perfection.",
+      "hitDie": 8,
+      "primaryAbility": [
+        "dex",
+        "wis"
+      ],
+      "savingThrows": [
+        "str",
+        "dex"
+      ],
+      "subclassLevel": 3,
+      "resources": [
+        {
+          "id": "ki",
+          "name": "Ki",
+          "max": "@class.monk.level",
+          "recharge": {
+            "kind": "shortRest"
+          }
+        }
+      ],
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.monk.feature.unarmored-defense",
+            "srd.class.monk.feature.martial-arts"
+          ],
+          "columns": {
+            "martialArts": "1d4",
+            "unarmoredMovement": 0,
+            "kiPoints": 0
+          }
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.monk.feature.ki",
+            "srd.class.monk.feature.unarmored-movement"
+          ],
+          "columns": {
+            "martialArts": "1d4",
+            "unarmoredMovement": 10,
+            "kiPoints": 2
+          }
+        },
+        {
+          "level": 3,
+          "featureIds": [
+            "srd.class.monk.feature.monastic-tradition",
+            "srd.class.monk.feature.deflect-missiles"
+          ],
+          "columns": {
+            "martialArts": "1d4",
+            "unarmoredMovement": 10,
+            "kiPoints": 3
+          }
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.class.monk.feature.slow-fall",
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "martialArts": "1d4",
+            "unarmoredMovement": 10,
+            "kiPoints": 4
+          }
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.monk.feature.extra-attack",
+            "srd.class.monk.feature.stunning-strike"
+          ],
+          "columns": {
+            "martialArts": "1d6",
+            "unarmoredMovement": 10,
+            "kiPoints": 5
+          }
+        },
+        {
+          "level": 6,
+          "featureIds": [
+            "srd.class.monk.feature.ki-empowered-strikes"
+          ],
+          "columns": {
+            "martialArts": "1d6",
+            "unarmoredMovement": 15,
+            "kiPoints": 6
+          }
+        },
+        {
+          "level": 7,
+          "featureIds": [
+            "srd.class.monk.feature.evasion",
+            "srd.class.monk.feature.stillness-of-mind"
+          ],
+          "columns": {
+            "martialArts": "1d6",
+            "unarmoredMovement": 15,
+            "kiPoints": 7
+          }
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "martialArts": "1d6",
+            "unarmoredMovement": 15,
+            "kiPoints": 8
+          }
+        },
+        {
+          "level": 9,
+          "featureIds": [],
+          "columns": {
+            "martialArts": "1d6",
+            "unarmoredMovement": 15,
+            "kiPoints": 9
+          }
+        },
+        {
+          "level": 10,
+          "featureIds": [
+            "srd.class.monk.feature.purity-of-body"
+          ],
+          "columns": {
+            "martialArts": "1d6",
+            "unarmoredMovement": 20,
+            "kiPoints": 10
+          }
+        },
+        {
+          "level": 11,
+          "featureIds": [],
+          "columns": {
+            "martialArts": "1d8",
+            "unarmoredMovement": 20,
+            "kiPoints": 11
+          }
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "martialArts": "1d8",
+            "unarmoredMovement": 20,
+            "kiPoints": 12
+          }
+        },
+        {
+          "level": 13,
+          "featureIds": [
+            "srd.class.monk.feature.tongue-of-the-sun-and-moon"
+          ],
+          "columns": {
+            "martialArts": "1d8",
+            "unarmoredMovement": 20,
+            "kiPoints": 13
+          }
+        },
+        {
+          "level": 14,
+          "featureIds": [
+            "srd.class.monk.feature.diamond-soul"
+          ],
+          "columns": {
+            "martialArts": "1d8",
+            "unarmoredMovement": 25,
+            "kiPoints": 14
+          }
+        },
+        {
+          "level": 15,
+          "featureIds": [
+            "srd.class.monk.feature.timeless-body"
+          ],
+          "columns": {
+            "martialArts": "1d8",
+            "unarmoredMovement": 25,
+            "kiPoints": 15
+          }
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "martialArts": "1d8",
+            "unarmoredMovement": 25,
+            "kiPoints": 16
+          }
+        },
+        {
+          "level": 17,
+          "featureIds": [],
+          "columns": {
+            "martialArts": "1d10",
+            "unarmoredMovement": 25,
+            "kiPoints": 17
+          }
+        },
+        {
+          "level": 18,
+          "featureIds": [
+            "srd.class.monk.feature.empty-body"
+          ],
+          "columns": {
+            "martialArts": "1d10",
+            "unarmoredMovement": 30,
+            "kiPoints": 18
+          }
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "martialArts": "1d10",
+            "unarmoredMovement": 30,
+            "kiPoints": 19
+          }
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.monk.feature.perfect-self"
+          ],
+          "columns": {
+            "martialArts": "1d10",
+            "unarmoredMovement": 30,
+            "kiPoints": 20
+          }
+        }
+      ],
+      "proficiencies": {
+        "armor": [],
+        "weapons": [
+          "simple weapons",
+          "shortswords"
+        ],
+        "tools": [
+          "One artisan tool or musical instrument"
+        ]
+      },
+      "skillChoices": {
+        "count": 2,
+        "from": [
+          "acrobatics",
+          "athletics",
+          "history",
+          "insight",
+          "religion",
+          "stealth"
+        ]
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "dex": 13,
+            "wis": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [],
+        "weapons": [
+          "simple weapons",
+          "shortswords"
+        ],
+        "tools": [],
+        "skillCount": 0
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.paladin",
+      "name": "Paladin",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A holy warrior bound to a sacred oath.",
+      "hitDie": 10,
+      "primaryAbility": [
+        "str",
+        "cha"
+      ],
+      "savingThrows": [
+        "wis",
+        "cha"
+      ],
+      "subclassLevel": 3,
+      "spellcasting": {
+        "ability": "cha",
+        "preparation": "prepared",
+        "ritual": false,
+        "progression": "half"
+      },
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.paladin.feature.divine-sense",
+            "srd.class.paladin.feature.lay-on-hands"
+          ]
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.paladin.feature.fighting-style",
+            "srd.class.paladin.feature.spellcasting",
+            "srd.class.paladin.feature.divine-smite"
+          ]
+        },
+        {
+          "level": 3,
+          "featureIds": [
+            "srd.class.paladin.feature.divine-health",
+            "srd.class.paladin.feature.sacred-oath"
+          ]
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.paladin.feature.extra-attack"
+          ]
+        },
+        {
+          "level": 6,
+          "featureIds": [
+            "srd.class.paladin.feature.aura-of-protection"
+          ]
+        },
+        {
+          "level": 7,
+          "featureIds": []
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 9,
+          "featureIds": []
+        },
+        {
+          "level": 10,
+          "featureIds": [
+            "srd.class.paladin.feature.aura-of-courage"
+          ]
+        },
+        {
+          "level": 11,
+          "featureIds": [
+            "srd.class.paladin.feature.improved-divine-smite"
+          ]
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 13,
+          "featureIds": []
+        },
+        {
+          "level": 14,
+          "featureIds": [
+            "srd.class.paladin.feature.cleansing-touch"
+          ]
+        },
+        {
+          "level": 15,
+          "featureIds": []
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 17,
+          "featureIds": []
+        },
+        {
+          "level": 18,
+          "featureIds": []
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ]
+        },
+        {
+          "level": 20,
+          "featureIds": []
+        }
+      ],
+      "proficiencies": {
+        "armor": [
+          "all armor",
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons",
+          "martial weapons"
+        ],
+        "tools": []
+      },
+      "skillChoices": {
+        "count": 2,
+        "from": [
+          "athletics",
+          "insight",
+          "intimidation",
+          "medicine",
+          "persuasion",
+          "religion"
+        ]
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "str": 13,
+            "cha": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [
+          "light armor",
+          "medium armor",
+          "shields"
+        ],
+        "weapons": [
+          "simple weapons",
+          "martial weapons"
+        ],
+        "tools": [],
+        "skillCount": 0
+      }
+    },
+    {
+      "kind": "class",
+      "id": "srd.class.bard",
+      "name": "Bard",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "An inspiring magician whose power echoes the music of creation.",
+      "hitDie": 8,
+      "primaryAbility": [
+        "cha"
+      ],
+      "savingThrows": [
+        "dex",
+        "cha"
+      ],
+      "subclassLevel": 3,
+      "spellcasting": {
+        "ability": "cha",
+        "preparation": "known",
+        "ritual": true,
+        "progression": "full"
+      },
+      "table": [
+        {
+          "level": 1,
+          "featureIds": [
+            "srd.class.bard.feature.spellcasting",
+            "srd.class.bard.feature.bardic-inspiration"
+          ],
+          "columns": {
+            "cantripsKnown": 2,
+            "inspirationDie": "d6"
+          }
+        },
+        {
+          "level": 2,
+          "featureIds": [
+            "srd.class.bard.feature.jack-of-all-trades",
+            "srd.class.bard.feature.song-of-rest"
+          ],
+          "columns": {
+            "cantripsKnown": 2,
+            "inspirationDie": "d6",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 3,
+          "featureIds": [
+            "srd.class.bard.feature.bard-college",
+            "srd.class.bard.feature.expertise"
+          ],
+          "columns": {
+            "cantripsKnown": 2,
+            "inspirationDie": "d6",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 4,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 3,
+            "inspirationDie": "d6",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 5,
+          "featureIds": [
+            "srd.class.bard.feature.font-of-inspiration"
+          ],
+          "columns": {
+            "cantripsKnown": 3,
+            "inspirationDie": "d8",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 6,
+          "featureIds": [
+            "srd.class.bard.feature.countercharm"
+          ],
+          "columns": {
+            "cantripsKnown": 3,
+            "inspirationDie": "d8",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 7,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 3,
+            "inspirationDie": "d8",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 8,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 3,
+            "inspirationDie": "d8",
+            "songOfRestDie": "d6"
+          }
+        },
+        {
+          "level": 9,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 3,
+            "inspirationDie": "d8",
+            "songOfRestDie": "d8"
+          }
+        },
+        {
+          "level": 10,
+          "featureIds": [
+            "srd.class.bard.feature.expertise",
+            "srd.class.bard.feature.magical-secrets"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d10",
+            "songOfRestDie": "d8"
+          }
+        },
+        {
+          "level": 11,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d10",
+            "songOfRestDie": "d8"
+          }
+        },
+        {
+          "level": 12,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d10",
+            "songOfRestDie": "d8"
+          }
+        },
+        {
+          "level": 13,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d10",
+            "songOfRestDie": "d10"
+          }
+        },
+        {
+          "level": 14,
+          "featureIds": [
+            "srd.class.bard.feature.magical-secrets"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d10",
+            "songOfRestDie": "d10"
+          }
+        },
+        {
+          "level": 15,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d12",
+            "songOfRestDie": "d10"
+          }
+        },
+        {
+          "level": 16,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d12",
+            "songOfRestDie": "d10"
+          }
+        },
+        {
+          "level": 17,
+          "featureIds": [],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d12",
+            "songOfRestDie": "d12"
+          }
+        },
+        {
+          "level": 18,
+          "featureIds": [
+            "srd.class.bard.feature.magical-secrets"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d12",
+            "songOfRestDie": "d12"
+          }
+        },
+        {
+          "level": 19,
+          "featureIds": [
+            "srd.feature.ability-score-improvement"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d12",
+            "songOfRestDie": "d12"
+          }
+        },
+        {
+          "level": 20,
+          "featureIds": [
+            "srd.class.bard.feature.superior-inspiration"
+          ],
+          "columns": {
+            "cantripsKnown": 4,
+            "inspirationDie": "d12",
+            "songOfRestDie": "d12"
+          }
+        }
+      ],
+      "proficiencies": {
+        "armor": [
+          "light armor"
+        ],
+        "weapons": [
+          "simple weapons",
+          "hand crossbows",
+          "longswords",
+          "rapiers",
+          "shortswords"
+        ],
+        "tools": [
+          "Three musical instruments"
+        ]
+      },
+      "skillChoices": {
+        "count": 3,
+        "from": [
+          "acrobatics",
+          "animalhandling",
+          "arcana",
+          "athletics",
+          "deception",
+          "history",
+          "insight",
+          "intimidation",
+          "investigation",
+          "medicine",
+          "nature",
+          "perception",
+          "performance",
+          "persuasion",
+          "religion",
+          "sleightofhand",
+          "stealth",
+          "survival"
+        ]
+      },
+      "multiclassPrerequisites": [
+        {
+          "abilities": {
+            "cha": 13
+          }
+        }
+      ],
+      "multiclassProficiencies": {
+        "armor": [
+          "light armor"
+        ],
+        "weapons": [],
+        "tools": [
+          "one musical instrument"
+        ],
+        "skillCount": 1
+      }
+    }
+  ]
+}
