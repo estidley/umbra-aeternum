@@ -367,6 +367,38 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         bump()
     }
 
+    fun adjustHp(delta: Int) {
+        val doc = store.character()
+        val document = doc.getJSONObject("document")
+        val hp = document.optJSONObject("hp") ?: JSONObject()
+        val current = if (hp.has("current")) hp.optInt("current") else 0
+        hp.put("current", (current + delta).coerceAtLeast(0))
+        document.put("hp", hp)
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun toggleInspiration() {
+        val doc = store.character()
+        val document = doc.getJSONObject("document")
+        document.put("inspiration", !document.optBoolean("inspiration", false))
+        store.writeCharacter(doc)
+        bump()
+    }
+
+    fun togglePin(key: String) {
+        val doc = store.character()
+        val document = doc.getJSONObject("document")
+        val choices = document.optJSONObject("choices") ?: JSONObject()
+        val array = choices.optJSONArray("umbra:pins") ?: JSONArray()
+        val values = (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }.toMutableList()
+        if (key in values) values.remove(key) else values.add(key)
+        choices.put("umbra:pins", JSONArray(values))
+        document.put("choices", choices)
+        store.writeCharacter(doc)
+        bump()
+    }
+
     private fun bump() {
         _state.update { it.copy(character = store.character(), book = store.book(), sheetTick = it.sheetTick + 1, banner = "Saved on this device") }
     }
@@ -421,7 +453,7 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
                 }
                 if (state.banner.isNotBlank()) Text(state.banner, color = Gold)
                 when (state.tab) {
-                    "sheet" -> SheetScreen(state, model, Modifier.weight(1f))
+                    "sheet" -> BeyondSheet(state, model, Modifier.weight(1f))
                     "compendium" -> CompendiumScreen(state, model, Modifier.weight(1f))
                     else -> ChatScreen(state, model, Modifier.weight(1f))
                 }

@@ -25,6 +25,17 @@ Keep messages short. Decisions live in `decisions/`, not here.
 
 ---
 
+## 2026-10-03 — Beyond-style character sheet
+
+| Field | Value |
+| --- | --- |
+| Date | 2026-10-03 |
+| From | Ched |
+| To | Webb + Fred |
+| Status | open |
+| Phase | A1 |
+| Message | Character sheet frames on Figma page Screens replace the old sheet: header, saves, dice, sections, skills, actions, reactions, inventory, spells. Native sheet uses vtt.character.v1. No Beyond login, no bottom nav, no Edit on website. Not merged. |
+
 ## 2026-10-03 — Umbra screens in Figma, client matched
 
 | Field | Value |
