@@ -36,7 +36,12 @@ class LocalStore(private val context: Context) {
 
     fun baseUrl(): String {
         val saved = secrets.getString("base_url", null)
-        return if (saved.isNullOrBlank()) BuildConfig.HERMES_BASE_URL else saved
+        val legacy = "https://hermes-agent-production-76d3.up.railway.app"
+        if (saved.isNullOrBlank() || HermesClient.normalizeBase(saved) == legacy) {
+            if (!saved.isNullOrBlank()) secrets.edit().remove("base_url").apply()
+            return BuildConfig.HERMES_BASE_URL
+        }
+        return saved
     }
 
     fun bearer(): String = secrets.getString("bearer", "").orEmpty()
@@ -48,7 +53,6 @@ class LocalStore(private val context: Context) {
             .apply()
     }
 
-    /** Later login stores the credential Webb's server returns. Not called until that path exists. */
     fun saveBearer(token: String) {
         secrets.edit().putString("bearer", token.trim()).remove("api_key").apply()
     }

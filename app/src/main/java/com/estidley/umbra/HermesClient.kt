@@ -17,6 +17,39 @@ class HermesClient {
         .callTimeout(60, TimeUnit.SECONDS)
         .build()
 
+
+    fun login(baseUrl: String, username: String, password: String): String {
+        val url = normalizeBase(baseUrl) + "/api/login"
+        val body = JSONObject()
+            .put("username", username)
+            .put("password", password)
+        val request = Request.Builder()
+            .url(url)
+            .header("Content-Type", "application/json")
+            .post(body.toString().toRequestBody(JSON))
+            .build()
+        try {
+            http.newCall(request).execute().use { response ->
+                val text = response.body.string()
+                if (response.code == 200) {
+                    val root = try {
+                        JSONObject(text)
+                    } catch (e: Exception) {
+                        throw HermesException("HTTP 200\nResponse was not JSON")
+                    }
+                    val key = if (root.has("api_key") && !root.isNull("api_key")) root.optString("api_key") else ""
+                    if (key.isBlank()) throw HermesException("HTTP 200\nMissing api_key")
+                    return key
+                }
+                throw HermesException("HTTP ${response.code}\n${errorSnippet(text)}")
+            }
+        } catch (e: HermesException) {
+            throw e
+        } catch (e: Exception) {
+            throw HermesException("Network error: ${e.message ?: e.javaClass.simpleName}")
+        }
+    }
+
     fun health(baseUrl: String): String {
         val url = normalizeBase(baseUrl) + "/health"
         val request = Request.Builder().url(url).get().build()
@@ -56,6 +89,18 @@ class HermesClient {
 
     companion object {
         private val JSON = "application/json; charset=utf-8".toMediaType()
+
+
+        private fun errorSnippet(text: String): String {
+            val fallback = text.take(400)
+            return try {
+                val root = JSONObject(text)
+                val error = if (root.has("error") && !root.isNull("error")) root.optString("error") else ""
+                if (error.isNotBlank()) error else fallback
+            } catch (e: Exception) {
+                fallback
+            }
+        }
 
         fun normalizeBase(raw: String): String = raw.trim().trimEnd('/')
 

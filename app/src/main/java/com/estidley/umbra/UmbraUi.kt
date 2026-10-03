@@ -144,21 +144,28 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
 
     fun checkConnection() {
         val current = _state.value
-        store.saveBaseUrl(current.baseUrl)
-        store.dropApiKey()
+        val legacy = "https://hermes-agent-production-76d3.up.railway.app"
+        val base = if (HermesClient.normalizeBase(current.baseUrl) == legacy) {
+            BuildConfig.HERMES_BASE_URL
+        } else {
+            current.baseUrl
+        }
+        store.saveBaseUrl(base)
         viewModelScope.launch {
-            _state.update { it.copy(busy = true, banner = "") }
-            val error = withContext(Dispatchers.IO) {
+            _state.update { it.copy(busy = true, banner = "", baseUrl = store.baseUrl()) }
+            val outcome = withContext(Dispatchers.IO) {
                 try {
-                    hermes.health(store.baseUrl())
-                    null
+                    hermes.login(store.baseUrl(), current.username, current.password) to null
                 } catch (e: Exception) {
-                    e.message ?: "Health check failed"
+                    null to (e.message ?: "Login failed")
                 }
             }
-            if (error != null) {
-                _state.update { it.copy(busy = false, connected = false, banner = error) }
+            val key = outcome.first
+            val error = outcome.second
+            if (key.isNullOrBlank()) {
+                _state.update { it.copy(busy = false, connected = false, banner = error ?: "HTTP 200\nMissing api_key") }
             } else {
+                store.saveBearer(key)
                 if (!getApplication<Application>().filesDir.resolve("character.json").exists()) {
                     store.writeCharacter(LocalStore.emptyCharacter("Adventurer"))
                 }
@@ -167,6 +174,8 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                         busy = false,
                         connected = true,
                         banner = "",
+                        username = "",
+                        password = "",
                         baseUrl = store.baseUrl(),
                         character = store.character(),
                         book = store.book(),
@@ -496,9 +505,9 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
             enabled = !state.busy,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12)),
-        ) { Text(if (state.busy) "Checking…" else "Check connection") }
+        ) { Text(if (state.busy) "Signing in..." else "Log in") }
         if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFE8EAF0))
-        Text("Checks GET /health. Username and password are not sent yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        Text("POST /api/login. The key stays on this device. Username and password are not saved.", color = Faint, style = MaterialTheme.typography.bodySmall)
         Text("Image generation and Google API: not connected yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
     }
 }

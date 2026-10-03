@@ -14,7 +14,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("String", "HERMES_BASE_URL", "\"https://hermes-agent-production-76d3.up.railway.app\"")
+        buildConfigField("String", "HERMES_BASE_URL", "\"https://umbra-login-production.up.railway.app\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
