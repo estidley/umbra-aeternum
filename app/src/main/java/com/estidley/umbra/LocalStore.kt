@@ -39,13 +39,22 @@ class LocalStore(private val context: Context) {
         return if (saved.isNullOrBlank()) BuildConfig.HERMES_BASE_URL else saved
     }
 
-    fun apiKey(): String = secrets.getString("api_key", "").orEmpty()
+    fun bearer(): String = secrets.getString("bearer", "").orEmpty()
 
-    fun saveConnection(baseUrl: String, apiKey: String) {
+    fun saveBaseUrl(baseUrl: String) {
         secrets.edit()
             .putString("base_url", HermesClient.normalizeBase(baseUrl))
-            .putString("api_key", apiKey)
+            .remove("api_key")
             .apply()
+    }
+
+    /** Later login stores the credential Webb's server returns. Not called until that path exists. */
+    fun saveBearer(token: String) {
+        secrets.edit().putString("bearer", token.trim()).remove("api_key").apply()
+    }
+
+    fun dropApiKey() {
+        if (secrets.contains("api_key")) secrets.edit().remove("api_key").apply()
     }
 
     fun character(): JSONObject {
@@ -67,7 +76,11 @@ class LocalStore(private val context: Context) {
             bookFile.writeText(seeded.toString(2))
             return seeded
         }
-        return JSONObject(bookFile.readText())
+        val book = JSONObject(bookFile.readText())
+        if (book.optJSONArray("features") == null) {
+            book.put("features", entities("features.json").filterKind("feature"))
+        }
+        return book
     }
 
     fun writeBook(book: JSONObject) {
@@ -185,6 +198,7 @@ class LocalStore(private val context: Context) {
             .put("species", species)
             .put("classes", classes)
             .put("subclasses", subclasses)
+            .put("features", features.filterKind("feature"))
             .put("monsters", monsters)
             .put("items", entities("items.json").filterKind("item"))
             .put("encounters", JSONArray())

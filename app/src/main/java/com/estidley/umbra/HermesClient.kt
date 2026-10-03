@@ -23,17 +23,17 @@ class HermesClient {
         return execute(request)
     }
 
-    fun chat(baseUrl: String, apiKey: String, messages: JSONArray): String {
+    fun chat(baseUrl: String, bearer: String, messages: JSONArray): String {
         val url = normalizeBase(baseUrl) + "/v1/chat/completions"
         val body = JSONObject()
             .put("model", "hermes")
             .put("messages", messages)
-        val request = Request.Builder()
+        val builder = Request.Builder()
             .url(url)
-            .header("Authorization", "Bearer $apiKey")
             .header("Content-Type", "application/json")
             .post(body.toString().toRequestBody(JSON))
-            .build()
+        if (bearer.isNotBlank()) builder.header("Authorization", "Bearer $bearer")
+        val request = builder.build()
         val raw = execute(request)
         return assistantText(raw)
     }

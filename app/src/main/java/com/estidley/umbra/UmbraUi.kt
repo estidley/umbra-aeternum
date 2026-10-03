@@ -54,13 +54,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-private val Ink = Color(0xFF14110E)
-private val Card = Color(0xFF221C17)
-private val Field = Color(0xFF2A241E)
-private val Gold = Color(0xFFE0C088)
-private val Muted = Color(0xFFC8BBA8)
-private val Faint = Color(0xFFA68456)
-private val Player = Color(0xFF2C3A32)
+private val Ink = Color(0xFF0B0D12)
+private val Card = Color(0xFF12151C)
+private val Field = Color(0xFF1B1F29)
+private val Gold = Color(0xFFD97A2B)
+private val Muted = Color(0xFFA3A9BA)
+private val Faint = Color(0xFF7C8399)
+private val Player = Color(0xFF1B1F29)
 
 private val Audiences = listOf("umbra" to "Umbra", "group" to "Group", "area" to "Area", "whisper" to "Whisper")
 
@@ -92,7 +92,8 @@ data class UmbraUiState(
     val busy: Boolean = false,
     val banner: String = "",
     val baseUrl: String = "",
-    val apiKey: String = "",
+    val username: String = "",
+    val password: String = "",
     val tab: String = "chat",
     val audience: String = "group",
     val whisperTo: ScenePerson? = null,
@@ -114,12 +115,13 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     private val hermes = HermesClient()
     private val queue = ArrayDeque<Proposal>()
     private val _state = MutableStateFlow(
-        UmbraUiState(baseUrl = store.baseUrl(), apiKey = store.apiKey()),
+        UmbraUiState(baseUrl = store.baseUrl()),
     )
     val state: StateFlow<UmbraUiState> = _state
 
     fun setBaseUrl(value: String) = _state.update { it.copy(baseUrl = value) }
-    fun setApiKey(value: String) = _state.update { it.copy(apiKey = value) }
+    fun setUsername(value: String) = _state.update { it.copy(username = value) }
+    fun setPassword(value: String) = _state.update { it.copy(password = value) }
     fun setDraft(value: String) = _state.update { it.copy(draft = value) }
     fun selectTab(tab: String) = _state.update { it.copy(tab = tab) }
     fun setQuery(value: String) = _state.update { it.copy(compendiumQuery = value, compendiumId = "") }
@@ -142,11 +144,8 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
 
     fun checkConnection() {
         val current = _state.value
-        if (current.apiKey.isBlank()) {
-            _state.update { it.copy(banner = "Enter an API key") }
-            return
-        }
-        store.saveConnection(current.baseUrl, current.apiKey)
+        store.saveBaseUrl(current.baseUrl)
+        store.dropApiKey()
         viewModelScope.launch {
             _state.update { it.copy(busy = true, banner = "") }
             val error = withContext(Dispatchers.IO) {
@@ -194,7 +193,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val raw = withContext(Dispatchers.IO) {
                 try {
-                    hermes.chat(store.baseUrl(), store.apiKey(), messages(history))
+                    hermes.chat(store.baseUrl(), store.bearer(), messages(history))
                 } catch (e: Exception) {
                     "ERROR:" + (e.message ?: "Chat failed")
                 }
@@ -423,9 +422,9 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
             background = Ink,
             surface = Card,
             primary = Gold,
-            onPrimary = Color(0xFF1A140C),
-            onBackground = Color(0xFFF6F1E8),
-            onSurface = Color(0xFFF6F1E8),
+            onPrimary = Color(0xFF0B0D12),
+            onBackground = Color(0xFFE8EAF0),
+            onSurface = Color(0xFFE8EAF0),
         ),
     ) {
         val pending = state.pending
@@ -478,9 +477,16 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
             singleLine = true,
         )
         OutlinedTextField(
-            state.apiKey,
-            model::setApiKey,
-            label = { Text("API key") },
+            state.username,
+            model::setUsername,
+            label = { Text("Username") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            state.password,
+            model::setPassword,
+            label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
@@ -489,10 +495,10 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
             onClick = { model.checkConnection() },
             enabled = !state.busy,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF1A140C)),
+            colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12)),
         ) { Text(if (state.busy) "Checking…" else "Check connection") }
-        if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFF6F1E8))
-        Text("Checks GET /health. No username or password.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFE8EAF0))
+        Text("Checks GET /health. Username and password are not sent yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
         Text("Image generation and Google API: not connected yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
     }
 }
@@ -501,9 +507,9 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
 private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).padding(0.dp)) {
-            Text(state.locationName, color = Color(0xFFF6F1E8), style = MaterialTheme.typography.titleMedium)
+            Text(state.locationName, color = Color(0xFFE8EAF0), style = MaterialTheme.typography.titleMedium)
             Box(
-                Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF4A3F34), RoundedCornerShape(12.dp)),
+                Modifier.fillMaxWidth().height(96.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF2A2F3D), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center,
             ) { Text("Scene", color = Faint) }
         }
@@ -530,8 +536,8 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable { model.selectWhisper(person) },
                 ) {
-                    Portrait(if (selected) Gold else Color(0xFF4A3F34))
-                    Text(person.name, color = Color(0xFFF6F1E8), style = MaterialTheme.typography.labelSmall)
+                    Portrait(if (selected) Gold else Color(0xFF2A2F3D))
+                    Text(person.name, color = Color(0xFFE8EAF0), style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -539,22 +545,22 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
             items(state.lines) { line ->
                 if (line.role == "user") {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                        Text(line.text, color = Color(0xFFF6F1E8), modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(Player).padding(10.dp))
+                        Text(line.text, color = Color(0xFFE8EAF0), modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(Player).padding(10.dp))
                     }
                 } else {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Portrait(Color(0xFF4A3F34), 28)
+                            Portrait(Color(0xFF2A2F3D), 28)
                             Text(line.speaker, color = Gold, style = MaterialTheme.typography.labelLarge)
                         }
-                        Text(line.text, color = Color(0xFFF6F1E8))
+                        Text(line.text, color = Color(0xFFE8EAF0))
                     }
                 }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(state.draft, model::setDraft, label = { Text("Message the table") }, modifier = Modifier.weight(1f))
-            Button(onClick = { model.sendChat() }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF1A140C))) {
+            Button(onClick = { model.sendChat() }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12))) {
                 Text(if (state.busy) "…" else "Send")
             }
         }
@@ -644,7 +650,7 @@ private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mo
                     else -> "none"
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("$label · $mark", color = Color(0xFFF6F1E8))
+                    Text("$label · $mark", color = Color(0xFFE8EAF0))
                     Row {
                         TextButton(onClick = { model.toggleSkill(key, false) }) { Text("Prof") }
                         TextButton(onClick = { model.toggleSkill(key, true) }) { Text("Exp") }
@@ -658,7 +664,7 @@ private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mo
             SheetField("Hit dice spent", hitDice) { hitDice = it }
             SheetField("Conditions", conditions) { conditions = it }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(if (inspiration) "Inspiration: yes" else "Inspiration: no", color = Color(0xFFF6F1E8))
+                Text(if (inspiration) "Inspiration: yes" else "Inspiration: no", color = Color(0xFFE8EAF0))
                 TextButton(onClick = { inspiration = !inspiration }) { Text("Toggle") }
             }
             Text("Armor class and speed are computed by the VTT engine and are not stored on the document.", color = Faint, style = MaterialTheme.typography.bodySmall)
@@ -668,7 +674,7 @@ private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mo
             val itemsJson = document.optJSONArray("items") ?: JSONArray()
             for (i in 0 until itemsJson.length()) {
                 val item = itemsJson.getJSONObject(i)
-                Text("${item.optInt("quantity", 1)} × ${item.optString("name")}", color = Color(0xFFF6F1E8))
+                Text("${item.optInt("quantity", 1)} × ${item.optString("name")}", color = Color(0xFFE8EAF0))
             }
             SheetField("Add item", itemName) { itemName = it }
             GoldButton("Add to inventory") { model.addItem(itemName) }
@@ -689,7 +695,7 @@ private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mo
             for (i in 0 until spells.length()) {
                 val spell = spells.getJSONObject(i)
                 val prepared = if (spell.optBoolean("prepared")) "prepared" else "known"
-                Text("${spell.optString("spellId")} · $prepared", color = Color(0xFFF6F1E8))
+                Text("${spell.optString("spellId")} · $prepared", color = Color(0xFFE8EAF0))
             }
             SheetField("Add spell id", spellId) { spellId = it }
             GoldButton("Add spell") { model.addSpell(spellId) }
@@ -734,7 +740,7 @@ private fun CompendiumScreen(state: UmbraUiState, model: UmbraViewModel, modifie
                 Column(
                     Modifier.fillMaxWidth().clickable { model.selectEntry(obj.optString("id")) }.padding(vertical = 6.dp),
                 ) {
-                    Text(obj.optString("name"), color = Color(0xFFF6F1E8))
+                    Text(obj.optString("name"), color = Color(0xFFE8EAF0))
                     Text(obj.optString("id"), color = Faint, style = MaterialTheme.typography.bodySmall)
                     if (state.compendiumId == obj.optString("id")) {
                         Text(obj.optString("description").ifBlank { "No description stored." }, color = Muted)
@@ -764,7 +770,7 @@ private fun SheetField(label: String, value: String, onChange: (String) -> Unit)
 
 @Composable
 private fun GoldButton(label: String, onClick: () -> Unit) {
-    Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF1A140C))) {
+    Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12))) {
         Text(label)
     }
 }

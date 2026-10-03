@@ -1,5 +1,6 @@
 package com.estidley.umbra
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,21 +33,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
 
-private val Navy = Color(0xFF151922)
-private val Panel = Color(0xFF232833)
-private val Line = Color(0xFF3A4254)
-private val InkText = Color(0xFFF4F6FA)
-private val Ash = Color(0xFF9AA3B5)
-private val Blue = Color(0xFF5B9CFF)
-private val Red = Color(0xFF8E2A2A)
-private val DiceRed = Color(0xFFE23B3B)
+private val Navy = Color(0xFF0B0D12)
+private val Panel = Color(0xFF171B24)
+private val Line = Color(0xFF2A2F3D)
+private val InkText = Color(0xFFE8EAF0)
+private val Ash = Color(0xFF7C8399)
+private val Blue = Color(0xFFF0944A)
+private val Red = Color(0xFFB8651F)
+private val DiceRed = Color(0xFFD97A2B)
 
 private enum class SheetPage {
     Main, Skills, Actions, Inventory, Spells, Speed, Features, Training, Background, Notes, Creatures,
@@ -75,8 +80,21 @@ private data class SheetFacts(
     val spells: JSONArray,
     val spellAbility: String,
     val feats: List<String>,
+    val traits: List<TraitBlock>,
     val background: String,
-    val notes: String,
+    val alignment: String,
+    val speciesSize: String,
+    val personality: String,
+    val ideals: String,
+    val bonds: String,
+    val flaws: String,
+    val appearance: String,
+    val backstory: String,
+    val otherNotes: String,
+    val armor: List<String>,
+    val weapons: List<String>,
+    val tools: List<String>,
+    val languages: List<String>,
     val otherProf: List<String>,
     val slotsSpent: Map<String, Int>,
 )
@@ -156,19 +174,16 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
                     SheetPage.Inventory -> InventoryPage(facts, inventoryMine, { inventoryMine = it }, { menu = true }, Modifier.weight(1f))
                     SheetPage.Spells -> SpellsPage(facts, spellQuery, { spellQuery = it }, { menu = true }, Modifier.weight(1f))
                     SheetPage.Speed -> SimplePage("Speed, Defenses", listOf("Speed ${facts.speed} ft.", "Armor class ${facts.ac}", "No resistances are stored on this character."), { menu = true }, Modifier.weight(1f))
-                    SheetPage.Features -> SimplePage("Features & Traits", facts.feats.ifEmpty { listOf("No features are stored on this character.") }, { menu = true }, Modifier.weight(1f))
-                    SheetPage.Training -> SimplePage("Proficiencies & Training", (facts.otherProf + facts.skillProf.map { it }).ifEmpty { listOf("No proficiencies are stored.") }, { menu = true }, Modifier.weight(1f))
-                    SheetPage.Background -> SimplePage("Background", listOf(facts.background.ifBlank { "No background is stored." }, facts.notes).filter { it.isNotBlank() }, { menu = true }, Modifier.weight(1f))
-                    SheetPage.Notes -> SimplePage("Notes", listOf(facts.notes.ifBlank { "No notes are stored." }), { menu = true }, Modifier.weight(1f))
-                    SheetPage.Creatures -> CreaturePage(creatureHp, creatureMax, { creatureHp = it }, { creatureMax = it }, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Features -> FeaturesPage(facts, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Training -> TrainingPage(facts, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Background -> BackgroundPage(facts, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Notes -> NotesPage(facts, { menu = true }, Modifier.weight(1f))
+                    SheetPage.Creatures -> CompanionsPage({ menu = true }, Modifier.weight(1f))
                 }
             }
         }
-        if (!menu && (page == SheetPage.Main || page == SheetPage.Spells)) {
-            Box(
-                Modifier.align(Alignment.BottomEnd).padding(16.dp).size(56.dp).clip(CircleShape).background(DiceRed).clickable { dice = true },
-                contentAlignment = Alignment.Center,
-            ) { Text("d20", color = InkText, fontWeight = FontWeight.SemiBold) }
+        if (!menu) {
+            EmberDie(onClick = { dice = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp))
         }
         if (dice) {
             DiceSheet(
@@ -251,15 +266,15 @@ private fun StatRow(facts: SheetFacts, model: UmbraViewModel) {
         StatBlock("ARMOR\nCLASS", facts.ac.toString())
         StatBlock("INITIATIVE", signed(facts.initiative))
         Box(
-            Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF2C3342)).border(1.dp, Line, RoundedCornerShape(8.dp)),
+            Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF2A2F3D)).border(1.dp, Line, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
         ) { Text("Img", color = Ash, fontSize = 11.sp) }
         Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Panel).padding(8.dp)) {
             Text("HIT POINTS", color = Ash, fontSize = 9.sp)
             Text("${facts.hpCurrent}/${facts.hpMax}", color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-            Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFF2A3142))) {
+            Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFF2A2F3D))) {
                 val ratio = if (facts.hpMax <= 0) 0f else (facts.hpCurrent.toFloat() / facts.hpMax).coerceIn(0f, 1f)
-                Box(Modifier.fillMaxWidth(ratio).height(4.dp).background(Color(0xFF3D7DFF)))
+                Box(Modifier.fillMaxWidth(ratio).height(4.dp).background(Color(0xFFD97A2B)))
             }
             Row {
                 Text("-", color = InkText, modifier = Modifier.clickable { model.adjustHp(-1) }.padding(end = 8.dp))
@@ -297,7 +312,7 @@ private fun AbilityGrid(scores: Map<String, Int>) {
             row.forEach { (key, label) ->
                 val score = scores[key] ?: 10
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(Color(0xFF1E2430)).border(1.dp, Line, RoundedCornerShape(18.dp)).padding(vertical = 8.dp),
+                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(Color(0xFF1B1F29)).border(1.dp, Line, RoundedCornerShape(18.dp)).padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(label, color = Ash, fontSize = 8.sp)
@@ -366,13 +381,13 @@ private fun ActionsPage(
             Text("$damage bludgeoning", color = InkText, modifier = Modifier.background(Panel).padding(horizontal = 8.dp, vertical = 4.dp))
         }
         Text("Actions in Combat", color = InkText, fontWeight = FontWeight.SemiBold)
-        Text(CombatActions.joinToString(", "), color = Color(0xFFC5CDD8), fontSize = 12.sp)
+        Text(CombatActions.joinToString(", "), color = Color(0xFFA3A9BA), fontSize = 12.sp)
         Text("BONUS ACTIONS", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         Text("No bonus actions are stored.", color = Ash, fontSize = 12.sp)
         Text("REACTIONS", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-        Text("Opportunity Attack", color = Color(0xFFC5CDD8), fontSize = 13.sp)
+        Text("Opportunity Attack", color = Color(0xFFA3A9BA), fontSize = 13.sp)
         Text("OTHER", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-        Text("Interact with an Object", color = Color(0xFFC5CDD8), fontSize = 13.sp)
+        Text("Interact with an Object", color = Color(0xFFA3A9BA), fontSize = 13.sp)
         Text("Limited uses", color = InkText, fontWeight = FontWeight.SemiBold)
         Text("No limited-use features are stored. Boxes appear when a feature has uses.", color = Ash, fontSize = 12.sp)
         CreatureBlock(creatureHp, creatureMax, onHp, onMax, showEmpty = true)
@@ -382,7 +397,7 @@ private fun ActionsPage(
 @Composable
 private fun CreaturePage(hp: Int, max: Int, onHp: (Int) -> Unit, onMax: (Int) -> Unit, onMenu: () -> Unit, modifier: Modifier) {
     Column(modifier.verticalScroll(rememberScrollState())) {
-        SectionBar("Extras: Creatures", onMenu)
+        SectionBar("Companions", onMenu)
         CreatureBlock(hp, max, onHp, onMax, showEmpty = true)
     }
 }
@@ -401,7 +416,7 @@ private fun CreatureBlock(hp: Int, max: Int, onHp: (Int) -> Unit, onMax: (Int) -
         HpButton("-", Red) { onHp((hp - 1).coerceAtLeast(0)) }
         Text("$hp/$max", color = InkText, modifier = Modifier.background(Panel).padding(horizontal = 10.dp, vertical = 6.dp))
         HpButton("+", Panel) { onHp(hp + 1); if (hp + 1 > max) onMax(hp + 1) }
-        HpButton("Apply", Color(0xFF1E3A5F)) { }
+        HpButton("Apply", Color(0xFF1B1F29)) { }
     }
     Text("Resets on Special", color = Ash, fontSize = 11.sp)
 }
@@ -500,7 +515,7 @@ private fun SpellsPage(facts: SheetFacts, query: String, onQuery: (String) -> Un
             )
         }
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF1B202B)).border(1.dp, Line, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF12151C)).border(1.dp, Line, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BasicTextField(
@@ -520,12 +535,12 @@ private fun SpellsPage(facts: SheetFacts, query: String, onQuery: (String) -> Un
                 val selected = chip == id
                 Text(
                     label,
-                    color = if (selected) Color.White else InkText,
+                    color = if (selected) Color(0xFF0B0D12) else InkText,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (selected) Color(0xFF1F6FEB) else Color(0xFF2C3340))
+                        .background(if (selected) Color(0xFFD97A2B) else Color(0xFF2A2F3D))
                         .clickable { chip = id }
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
@@ -631,6 +646,168 @@ private fun spellLabel(id: String): String {
     return tail.replace('-', ' ').replace('_', ' ').replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
 
+
+@Composable
+private fun EmberDie(onClick: () -> Unit, modifier: Modifier) {
+    Box(modifier.size(56.dp).clickable { onClick() }, contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            drawCircle(Color(0xFFB8651F))
+            val face = Path()
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val radius = size.minDimension * 0.34f
+            for (i in 0 until 6) {
+                val angle = PI / 3.0 * i - PI / 2.0
+                val x = cx + (radius * cos(angle)).toFloat()
+                val y = cy + (radius * sin(angle) * 0.92).toFloat()
+                if (i == 0) face.moveTo(x, y) else face.lineTo(x, y)
+            }
+            face.close()
+            drawPath(face, Color(0xFFD97A2B))
+            val highlight = Path()
+            highlight.moveTo(cx, cy - radius * 0.62f)
+            highlight.lineTo(cx - radius * 0.48f, cy + radius * 0.12f)
+            highlight.lineTo(cx + radius * 0.08f, cy + radius * 0.02f)
+            highlight.close()
+            drawPath(highlight, Color(0xFFF6B47E))
+        }
+        Text("20", color = Color(0xFF0B0D12), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun FeaturesPage(facts: SheetFacts, onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionBar("Features & Traits", onMenu)
+        if (facts.traits.isEmpty()) Text("No traits are stored on this character.", color = Ash)
+        facts.traits.forEach { block ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(block.title, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                if (block.source.isNotBlank()) {
+                    Text("  \u2022  " + block.source, color = Ash, fontSize = 12.sp)
+                }
+            }
+            if (block.body.isNotBlank()) Text(block.body, color = InkText, fontSize = 14.sp)
+            block.choices.forEach { choice ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.padding(end = 8.dp).width(2.dp).height(16.dp).background(Ash))
+                    Text(choice, color = InkText)
+                }
+            }
+            if (block.useBoxes > 0) {
+                Text("Used Charges:", color = InkText, fontSize = 13.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(block.useBoxes) {
+                        Box(Modifier.size(22.dp, 18.dp).border(1.5.dp, Ash, RoundedCornerShape(4.dp)))
+                    }
+                }
+            }
+            if (block.recharge.isNotBlank()) Text(block.recharge, color = Ash, fontSize = 12.sp)
+        }
+        Text("FEATS", color = Color(0xFFF0944A), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        if (facts.feats.isEmpty()) {
+            Text("There are no feats for this character.", color = Ash)
+        } else {
+            facts.feats.forEach { Text(it, color = InkText) }
+        }
+    }
+}
+
+@Composable
+private fun TrainingPage(facts: SheetFacts, onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionBar("Proficiencies & Training", onMenu)
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("+" + facts.prof, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 28.sp)
+            Text("Proficiency Bonus", color = InkText, fontWeight = FontWeight.SemiBold)
+        }
+        ProficiencyGroup("Armor", facts.armor)
+        ProficiencyGroup("Weapons", facts.weapons)
+        ProficiencyGroup("Tools", facts.tools)
+        ProficiencyGroup("Languages", facts.languages)
+    }
+}
+
+@Composable
+private fun ProficiencyGroup(title: String, lines: List<String>) {
+    Text(title, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+    if (lines.isEmpty()) Text("None stored.", color = Ash)
+    lines.forEach { Text(it, color = InkText) }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
+}
+
+@Composable
+private fun BackgroundPage(facts: SheetFacts, onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SectionBar("Background", onMenu)
+        Text("BACKGROUND", color = Color(0xFFF0944A), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        Text(facts.background.ifBlank { "No background is stored." }, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+        Text("Feature text is not stored on this character.", color = Ash)
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
+        Text("CHARACTERISTICS", color = Color(0xFFF0944A), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        Characteristic("Alignment", facts.alignment)
+        Characteristic("Gender", "")
+        Characteristic("Eyes", "")
+        Characteristic("Size", facts.speciesSize.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
+        Characteristic("Height", "")
+        Characteristic("Faith", "")
+        Characteristic("Hair", "")
+        Characteristic("Skin", "")
+        Characteristic("Age", "")
+        Characteristic("Weight", "")
+        TraitLine("Personality Traits", facts.personality, "No Personality Traits")
+        TraitLine("Ideals", facts.ideals, "No Ideals")
+        TraitLine("Bonds", facts.bonds, "No Bonds")
+        TraitLine("Flaws", facts.flaws, "No Flaws")
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
+        Text("APPEARANCE", color = Color(0xFFF0944A), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        Text(
+            facts.appearance.ifBlank { "You do not have any appearance traits now." },
+            color = if (facts.appearance.isBlank()) Ash else InkText,
+        )
+    }
+}
+
+@Composable
+private fun Characteristic(label: String, value: String) {
+    Text(label + ": " + value.ifBlank { "--" }, color = InkText, fontWeight = FontWeight.SemiBold)
+}
+
+@Composable
+private fun TraitLine(label: String, value: String, empty: String) {
+    Text(label, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+    Text(value.ifBlank { empty }, color = if (value.isBlank()) Ash else InkText)
+}
+
+@Composable
+private fun NotesPage(facts: SheetFacts, onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionBar("Notes", onMenu)
+        NoteBlock("Organizations", "")
+        NoteBlock("Allies", "")
+        NoteBlock("Enemies", "")
+        NoteBlock("Backstory", facts.backstory)
+        NoteBlock("Other", facts.otherNotes)
+    }
+}
+
+@Composable
+private fun NoteBlock(title: String, value: String) {
+    Text(title, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+    Text(if (value.isBlank()) "+ Add $title" else value, color = if (value.isBlank()) Ash else InkText)
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
+}
+
+@Composable
+private fun CompanionsPage(onMenu: () -> Unit, modifier: Modifier) {
+    Column(modifier.fillMaxSize()) {
+        SectionBar("Companions", onMenu)
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            Text("Your companions will appear here", color = InkText)
+        }
+    }
+}
+
 @Composable
 private fun SimplePage(title: String, lines: List<String>, onMenu: () -> Unit, modifier: Modifier) {
     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -652,7 +829,7 @@ private fun SectionMenu(onPick: (SheetPage) -> Unit) {
         "Proficiencies & Training" to SheetPage.Training,
         "Background" to SheetPage.Background,
         "Notes" to SheetPage.Notes,
-        "Extras: Creatures" to SheetPage.Creatures,
+        "Companions" to SheetPage.Creatures,
     )
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("Reorder", color = Ash, modifier = Modifier.align(Alignment.End))
@@ -681,7 +858,7 @@ private fun DiceSheet(
         verticalArrangement = Arrangement.Bottom,
     ) {
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).background(Color(0xFF1B2130)).border(1.dp, Line, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).clickable { }.padding(14.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).background(Color(0xFF12151C)).border(1.dp, Line, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)).clickable { }.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -694,7 +871,7 @@ private fun DiceSheet(
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 listOf(20, 12, 100, 10, 8, 6, 4).forEach { sides ->
                     val on = (counts[sides] ?: 0) > 0
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) Color(0xFF3A2030) else Panel).clickable { onCount(sides) }.padding(8.dp)) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) Color(0xFF2A2F3D) else Panel).clickable { onCount(sides) }.padding(8.dp)) {
                         Text("d$sides", color = if (sides == 20) DiceRed else InkText, fontWeight = FontWeight.SemiBold)
                         Text("${counts[sides] ?: 0}", color = Ash, fontSize = 10.sp)
                     }
@@ -704,9 +881,9 @@ private fun DiceSheet(
                 Text("RESET", color = InkText, modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Line).clickable { onReset() }.padding(vertical = 10.dp), fontWeight = FontWeight.SemiBold)
                 Text("ROLL", color = InkText, modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Red).clickable { onRoll() }.padding(vertical = 10.dp), fontWeight = FontWeight.SemiBold)
             }
-            Text("CLEAR DICE", color = Color(0xFFE0B15A), fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.End).clickable { onClear() })
+            Text("CLEAR DICE", color = Color(0xFFF6B47E), fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.End).clickable { onClear() })
             if (result != null) {
-                Text(result, color = InkText, modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFF5B8CFF), RoundedCornerShape(12.dp)).background(Color(0xFF243044)).padding(10.dp))
+                Text(result, color = InkText, modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF0944A), RoundedCornerShape(12.dp)).background(Color(0xFF171B24)).padding(10.dp))
             }
         }
     }
@@ -748,6 +925,160 @@ private fun rollDice(counts: Map<Int, Int>): String {
     return parts.joinToString("  ") + "   =   $total"
 }
 
+
+private data class TraitBlock(
+    val title: String,
+    val source: String,
+    val body: String,
+    val choices: List<String> = emptyList(),
+    val useBoxes: Int = 0,
+    val recharge: String = "",
+)
+
+private fun collectTraits(
+    book: JSONObject?,
+    document: JSONObject,
+    species: JSONObject?,
+    classId: String,
+    className: String,
+    level: Int,
+): List<TraitBlock> {
+    val out = mutableListOf<TraitBlock>()
+    val speciesSource = sourceLabel(species)
+    if (species != null) {
+        val size = species.optString("size")
+        if (size.isNotBlank()) {
+            out += TraitBlock("Size", speciesSource, "You are ${size.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }}.")
+        }
+        val speed = species.optInt("speed", 0)
+        if (speed > 0) out += TraitBlock("Speed", speciesSource, "Your walking speed is $speed ft.")
+        sentenceContaining(species.optString("description"), "darkvision")?.let { sentence ->
+            out += TraitBlock("Darkvision", speciesSource, sentence)
+        }
+        val effects = species.optJSONArray("effects")
+        if (effects != null) {
+            for (i in 0 until effects.length()) {
+                val effect = effects.optJSONObject(i) ?: continue
+                if (effect.optString("type") == "descriptive") {
+                    val text = effect.optString("text")
+                    if (text.isNotBlank()) out += TraitBlock("Trait", speciesSource, text)
+                }
+            }
+        }
+        val featureIds = species.optJSONArray("featureIds")
+        if (featureIds != null) {
+            for (i in 0 until featureIds.length()) {
+                val feature = findEntity(book, "features", featureIds.optString(i)) ?: continue
+                out += traitFromFeature(feature, document)
+            }
+        }
+    }
+    val features = book?.optJSONArray("features")
+    if (features != null && classId.isNotBlank()) {
+        for (i in 0 until features.length()) {
+            val feature = features.optJSONObject(i) ?: continue
+            if (feature.optString("parentId") != classId) continue
+            if (feature.optInt("level", 1) > level) continue
+            out += traitFromFeature(feature, document)
+        }
+    }
+    if (className.isBlank()) return out
+    return out
+}
+
+private fun traitFromFeature(feature: JSONObject, document: JSONObject): TraitBlock {
+    val uses = feature.optJSONObject("uses")
+    val maxRaw = if (uses != null && uses.has("max")) uses.get("max") else null
+    val boxes = if (maxRaw is Number) maxRaw.toInt().coerceIn(0, 8) else 0
+    val rechargeKind = uses?.optJSONObject("recharge")?.optString("kind").orEmpty()
+    val recharge = when (rechargeKind) {
+        "longRest" -> "Resets on Long Rest"
+        "shortRest" -> "Resets on Short Rest"
+        else -> ""
+    }
+    return TraitBlock(
+        title = feature.optString("name").ifBlank { feature.optString("id") },
+        source = sourceLabel(feature),
+        body = feature.optString("description"),
+        choices = choicesFor(document, feature.optString("id")),
+        useBoxes = boxes,
+        recharge = recharge,
+    )
+}
+
+private fun choicesFor(document: JSONObject, featureId: String): List<String> {
+    if (featureId.isBlank()) return emptyList()
+    val choices = document.optJSONObject("choices") ?: return emptyList()
+    val picked = mutableListOf<String>()
+    val keys = choices.keys()
+    while (keys.hasNext()) {
+        val key = keys.next()
+        if (!key.contains(featureId)) continue
+        when (val value = choices.get(key)) {
+            is String -> if (value.isNotBlank()) picked += value
+            is JSONArray -> {
+                for (i in 0 until value.length()) {
+                    val item = value.optString(i)
+                    if (item.isNotBlank()) picked += item
+                }
+            }
+        }
+    }
+    return picked
+}
+
+private fun sourceLabel(entity: JSONObject?): String {
+    if (entity == null) return ""
+    val source = entity.opt("source")
+    return when (source) {
+        is JSONObject -> source.optString("name")
+        is String -> source
+        else -> ""
+    }
+}
+
+private fun sentenceContaining(text: String, word: String): String? {
+    if (!text.contains(word, ignoreCase = true)) return null
+    return text.split(Regex("(?<=[.!?])\\s+")).firstOrNull { it.contains(word, ignoreCase = true) } ?: text
+}
+
+private fun proficiencyLines(classEntity: JSONObject?, key: String, className: String, document: JSONObject): List<String> {
+    val fromClass = classEntity?.optJSONObject("proficiencies")?.optJSONArray(key)
+    val lines = mutableListOf<String>()
+    if (fromClass != null) {
+        for (i in 0 until fromClass.length()) {
+            val name = titleWords(fromClass.optString(i))
+            if (name.isBlank()) continue
+            lines += if (className.isBlank()) name else "$name ($className)"
+        }
+    }
+    val bucket = when (key) {
+        "armor" -> "armor"
+        "weapons" -> "weapon"
+        else -> "tool"
+    }
+    for (extra in jsonList(document.optJSONArray("otherProficiencies"))) {
+        val low = extra.lowercase()
+        val matches = when (bucket) {
+            "armor" -> "armor" in low || "shield" in low
+            "weapon" -> "weapon" in low
+            else -> "tool" in low || "kit" in low
+        }
+        if (matches) lines += extra
+    }
+    return lines.distinct()
+}
+
+private fun languageLines(document: JSONObject): List<String> {
+    return jsonList(document.optJSONArray("otherProficiencies")).filter { extra ->
+        val low = extra.lowercase()
+        "armor" !in low && "shield" !in low && "weapon" !in low && "tool" !in low && "kit" !in low
+    }
+}
+
+private fun titleWords(value: String): String =
+    value.split(' ').joinToString(" ") { word -> word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } }
+
 private fun readFacts(character: JSONObject?, book: JSONObject?): SheetFacts {
     val doc = character ?: JSONObject()
     val document = doc.optJSONObject("document") ?: JSONObject()
@@ -785,9 +1116,6 @@ private fun readFacts(character: JSONObject?, book: JSONObject?): SheetFacts {
     val currency = document.optJSONObject("currency") ?: JSONObject()
     val coins = listOf("cp", "sp", "ep", "gp", "pp").joinToString("  ") { "$it ${currency.optInt(it, 0)}" }
     val details = document.optJSONObject("details") ?: JSONObject()
-    val notes = listOf("appearance", "personalityTraits", "ideals", "bonds", "flaws", "backstory", "notes")
-        .mapNotNull { key -> details.optString(key).takeIf { it.isNotBlank() } }
-        .joinToString("\n\n")
     val ac = if (document.has("ac")) document.optInt("ac") else 10 + abilityMod(scores["dex"] ?: 10)
     val spellAbility = classEntity?.optJSONObject("spellcasting")?.optString("ability").orEmpty().ifBlank { "int" }
     return SheetFacts(
@@ -813,9 +1141,24 @@ private fun readFacts(character: JSONObject?, book: JSONObject?): SheetFacts {
         spells = document.optJSONArray("spells") ?: JSONArray(),
         slotsSpent = readSlots(document.optJSONObject("slotsSpent")),
         spellAbility = spellAbility,
-        feats = jsonList(document.optJSONArray("featIds")),
+        feats = jsonList(document.optJSONArray("featIds")).map { id ->
+            findEntity(book, "features", id)?.optString("name").orEmpty().ifBlank { id }
+        },
+        traits = collectTraits(book, document, speciesEntity, classId, className, level),
         background = document.optString("backgroundId").ifBlank { details.optString("background") },
-        notes = notes,
+        alignment = details.optString("alignment"),
+        speciesSize = speciesEntity?.optString("size").orEmpty(),
+        personality = details.optString("personalityTraits"),
+        ideals = details.optString("ideals"),
+        bonds = details.optString("bonds"),
+        flaws = details.optString("flaws"),
+        appearance = details.optString("appearance"),
+        backstory = details.optString("backstory"),
+        otherNotes = details.optString("notes"),
+        armor = proficiencyLines(classEntity, "armor", className, document),
+        weapons = proficiencyLines(classEntity, "weapons", className, document),
+        tools = proficiencyLines(classEntity, "tools", className, document),
+        languages = languageLines(document),
         otherProf = jsonList(document.optJSONArray("otherProficiencies")),
     )
 }
