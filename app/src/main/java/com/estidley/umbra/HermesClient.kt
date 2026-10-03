@@ -115,6 +115,59 @@ class HermesClient {
         return assistantText(raw)
     }
 
+    fun chatHistory(baseUrl: String, sessionToken: String): List<ChatHistoryMessage> {
+        val all = mutableListOf<ChatHistoryMessage>()
+        var offset = 0
+        val limit = 500
+        while (true) {
+            val page = chatHistoryPage(baseUrl, sessionToken, limit, offset)
+            all += page.messages
+            if (!page.hasMore) break
+            val step = if (page.returned > 0) page.returned else page.messages.size
+            if (step <= 0) break
+            val next = offset + step
+            if (next <= offset) break
+            offset = next
+        }
+        return all
+    }
+
+    private fun chatHistoryPage(baseUrl: String, sessionToken: String, limit: Int, offset: Int): ChatHistoryPage {
+        val capped = limit.coerceIn(1, 2000)
+        val path = "/api/chat/history?limit=$capped&offset=$offset"
+        val root = authorizedGet(baseUrl, path, sessionToken)
+        val array = root.optJSONArray("messages") ?: JSONArray()
+        val messages = mutableListOf<ChatHistoryMessage>()
+        for (i in 0 until array.length()) {
+            val obj = array.optJSONObject(i) ?: continue
+            val role = obj.optString("role")
+            if (role != "user" && role != "assistant") continue
+            val id = jsonLong(obj, "id")
+            if (id < 0) continue
+            messages += ChatHistoryMessage(
+                id = id,
+                role = role,
+                content = if (obj.has("content") && !obj.isNull("content")) obj.optString("content") else "",
+                createdAt = obj.optString("created_at"),
+            )
+        }
+        val returned = if (root.has("returned")) root.optInt("returned") else messages.size
+        return ChatHistoryPage(
+            messages = messages,
+            returned = returned,
+            hasMore = root.optBoolean("has_more", false),
+        )
+    }
+
+    private fun jsonLong(obj: JSONObject, key: String): Long {
+        if (!obj.has(key) || obj.isNull(key)) return -1
+        return when (val value = obj.opt(key)) {
+            is Number -> value.toLong()
+            is String -> value.toLongOrNull() ?: -1
+            else -> -1
+        }
+    }
+
     fun compendiumBooks(baseUrl: String, sessionToken: String): List<CompendiumBook> {
         val root = authorizedGet(baseUrl, "/api/compendium/books?dedupe=true", sessionToken)
         val books = root.optJSONArray("books") ?: JSONArray()
@@ -328,3 +381,16 @@ data class CompendiumKind(val kind: String, val count: Int)
 data class CompendiumHit(val id: String, val kind: String, val name: String)
 
 data class CompendiumPage(val entities: List<CompendiumHit>, val returned: Int, val hasMore: Boolean)
+
+data class ChatHistoryMessage(
+    val id: Long,
+    val role: String,
+    val content: String,
+    val createdAt: String,
+)
+
+data class ChatHistoryPage(
+    val messages: List<ChatHistoryMessage>,
+    val returned: Int,
+    val hasMore: Boolean,
+)

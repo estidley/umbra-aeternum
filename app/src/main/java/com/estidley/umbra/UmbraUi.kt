@@ -86,7 +86,7 @@ private val Skills = listOf(
     "survival" to "Survival",
 )
 
-data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String)
+data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String, val serverId: Long? = null, val createdAt: String? = null)
 
 data class UmbraUiState(
     val connected: Boolean = false,
@@ -129,6 +129,19 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         UmbraUiState(baseUrl = store.baseUrl()),
     )
     val state: StateFlow<UmbraUiState> = _state
+
+    init {
+        if (store.sessionToken().isNotBlank()) {
+            _state.update {
+                it.copy(
+                    connected = true,
+                    character = store.character(),
+                    book = store.book(),
+                )
+            }
+            loadChatHistory()
+        }
+    }
 
     fun setBaseUrl(value: String) = _state.update { it.copy(baseUrl = value) }
     fun setUsername(value: String) = _state.update { it.copy(username = value) }
@@ -243,10 +256,111 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun loadChatHistory() {
+        viewModelScope.launch {
+            if (store.sessionToken().isBlank()) {
+                missingSession()
+                return@launch
+            }
+            val fetched = try {
+                withContext(Dispatchers.IO) {
+                    hermes.chatHistory(store.baseUrl(), store.sessionToken())
+                }
+            } catch (e: HermesException) {
+                val message = e.message.orEmpty()
+                if (message == "HTTP 401" || message == "The session is missing.") missingSession()
+                else _state.update { it.copy(banner = message.ifBlank { "Network error" }) }
+                return@launch
+            }
+            if (!_state.value.connected) return@launch
+            val incoming = fetched.mapNotNull { lineFromHistory(it) }
+            _state.update { state ->
+                val lines = mergeHistory(state.lines, incoming)
+                val scene = sceneFromHistory(lines)
+                state.copy(
+                    lines = lines,
+                    locationName = scene.first ?: state.locationName,
+                    present = scene.second ?: state.present,
+                )
+            }
+        }
+    }
+
+    private fun lineFromHistory(message: ChatHistoryMessage): ChatLine? {
+        return when (message.role) {
+            "user" -> ChatLine(
+                role = "user",
+                text = visibleUserText(message.content),
+                speaker = "You",
+                apiContent = message.content,
+                serverId = message.id,
+                createdAt = message.createdAt,
+            )
+            "assistant" -> when (val reply = SceneJson.parseAssistant(message.content)) {
+                AssistantReply.Incomplete -> ChatLine(
+                    role = "assistant",
+                    text = SceneJson.INCOMPLETE,
+                    speaker = "",
+                    apiContent = message.content,
+                    serverId = message.id,
+                    createdAt = message.createdAt,
+                )
+                is AssistantReply.Complete -> ChatLine(
+                    role = "assistant",
+                    text = reply.turn.text,
+                    speaker = reply.turn.speakerName,
+                    apiContent = message.content,
+                    serverId = message.id,
+                    createdAt = message.createdAt,
+                )
+            }
+            else -> null
+        }
+    }
+
+    private fun visibleUserText(content: String): String {
+        val fence = content.indexOf("\n\n```json")
+        return if (fence >= 0) content.substring(0, fence) else content
+    }
+
+    private fun mergeHistory(existing: List<ChatLine>, incoming: List<ChatLine>): List<ChatLine> {
+        val seen = existing.mapNotNull { it.serverId }.toMutableSet()
+        val merged = existing.toMutableList()
+        for (row in incoming) {
+            val id = row.serverId ?: continue
+            if (!seen.add(id)) continue
+            val idx = merged.indexOfFirst { it.serverId == null && it.role == row.role && it.apiContent == row.apiContent }
+            if (idx >= 0) {
+                merged[idx] = merged[idx].copy(serverId = id, createdAt = row.createdAt)
+            } else {
+                merged += row
+            }
+        }
+        return merged.sortedWith(compareBy({ it.createdAt.isNullOrBlank() }, { it.createdAt ?: "" }, { it.serverId ?: Long.MAX_VALUE }))
+    }
+
+    private fun sceneFromHistory(lines: List<ChatLine>): Pair<String?, List<ScenePerson>?> {
+        var location: String? = null
+        var present: List<ScenePerson>? = null
+        var saw = false
+        for (line in lines) {
+            if (line.role != "assistant") continue
+            when (val reply = SceneJson.parseAssistant(line.apiContent)) {
+                is AssistantReply.Complete -> {
+                    location = reply.turn.locationName
+                    present = reply.turn.present ?: emptyList()
+                    saw = true
+                }
+                AssistantReply.Incomplete -> Unit
+            }
+        }
+        return if (saw) location to present else null to null
+    }
+
     private fun missingSession() {
         store.clearSession()
         _state.update {
-            it.copy(connected = false, busy = false, password = "", banner = "The session is missing.", pending = null)
+            it.copy(connected = false, busy = false, password = "", banner = "The session is missing.", pending = null, lines = emptyList())
         }
     }
 
@@ -280,6 +394,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                             pending = null,
                             banner = "",
                             password = "",
+                            lines = emptyList(),
                         )
                     }
                 }
@@ -359,6 +474,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                         tab = "chat",
                     )
                 }
+                loadChatHistory()
             }
         }
     }
@@ -398,7 +514,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     _state.update {
                         it.copy(
                             busy = false,
-                            lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", SceneJson.INCOMPLETE),
+                            lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", raw),
                             pending = null,
                         )
                     }
