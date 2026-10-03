@@ -1,0 +1,1683 @@
+{
+  "id": "srd-5.1",
+  "name": "SRD 5.1",
+  "edition": "2014",
+  "version": "1.0.0",
+  "source": {
+    "name": "SRD 5.1",
+    "license": "ogl-1.0a"
+  },
+  "visibility": "public",
+  "entities": [
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "stealth": 6
+      },
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "Common",
+        "Goblin"
+      ],
+      "featureIds": [
+        "srd.monster.goblin.feature.nimble-escape"
+      ],
+      "actions": [
+        {
+          "name": "Scimitar",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) slashing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "1d6 + 2",
+            "damageType": "slashing"
+          }
+        },
+        {
+          "name": "Shortbow",
+          "description": "Ranged Weapon Attack: +4 to hit, range 80/320 ft., one target. Hit: 5 (1d6 + 2) piercing damage.",
+          "attack": {
+            "kind": "ranged",
+            "bonus": 4,
+            "range": {
+              "normal": 80,
+              "long": 320
+            },
+            "damage": "1d6 + 2",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.goblin",
+      "name": "Goblin",
+      "size": "small",
+      "creatureType": "humanoid (goblinoid)",
+      "alignment": "neutral evil",
+      "ac": 15,
+      "hp": {
+        "average": 7,
+        "formula": "2d6"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 8,
+        "dex": 14,
+        "con": 10,
+        "int": 10,
+        "wis": 8,
+        "cha": 8
+      },
+      "challenge": 0.25,
+      "description": "Goblins are small, black-hearted humanoids that lair in despoiled dungeons and other dismal settings."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.goblin.feature.nimble-escape",
+      "parentId": "srd.monster.goblin",
+      "name": "Nimble Escape",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The goblin can take the Disengage or Hide action as a bonus action on each of its turns.",
+      "activation": {
+        "cost": "bonusAction"
+      },
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Disengage or Hide as a bonus action."
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "intimidation": 2
+      },
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "Common",
+        "Orc"
+      ],
+      "featureIds": [
+        "srd.monster.orc.feature.aggressive"
+      ],
+      "actions": [
+        {
+          "name": "Greataxe",
+          "description": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 9 (1d12 + 3) slashing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 5,
+            "reach": 5,
+            "damage": "1d12 + 3",
+            "damageType": "slashing"
+          }
+        },
+        {
+          "name": "Javelin",
+          "description": "Melee or Ranged Weapon Attack: +5 to hit, reach 5 ft. or range 30/120 ft., one target. Hit: 6 (1d6 + 3) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 5,
+            "reach": 5,
+            "damage": "1d6 + 3",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.orc",
+      "name": "Orc",
+      "size": "medium",
+      "creatureType": "humanoid (orc)",
+      "alignment": "chaotic evil",
+      "ac": 13,
+      "hp": {
+        "average": 15,
+        "formula": "2d8 + 6"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 16,
+        "dex": 12,
+        "con": 16,
+        "int": 7,
+        "wis": 11,
+        "cha": 10
+      },
+      "challenge": 0.5,
+      "description": "Orcs are savage humanoids with stooped postures, piggish faces, and prominent tusks."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.orc.feature.aggressive",
+      "parentId": "srd.monster.orc",
+      "name": "Aggressive",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "As a bonus action, the orc can move up to its speed toward a hostile creature that it can see.",
+      "activation": {
+        "cost": "bonusAction"
+      },
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Move up to speed toward a hostile creature you can see."
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "Common",
+        "Draconic"
+      ],
+      "featureIds": [
+        "srd.monster.kobold.feature.sunlight-sensitivity",
+        "srd.monster.kobold.feature.pack-tactics"
+      ],
+      "actions": [
+        {
+          "name": "Dagger",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 4 (1d4 + 2) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "1d4 + 2",
+            "damageType": "piercing"
+          }
+        },
+        {
+          "name": "Sling",
+          "description": "Ranged Weapon Attack: +4 to hit, range 30/120 ft., one target. Hit: 4 (1d4 + 2) bludgeoning damage.",
+          "attack": {
+            "kind": "ranged",
+            "bonus": 4,
+            "range": {
+              "normal": 30,
+              "long": 120
+            },
+            "damage": "1d4 + 2",
+            "damageType": "bludgeoning"
+          }
+        }
+      ],
+      "id": "srd.monster.kobold",
+      "name": "Kobold",
+      "size": "small",
+      "creatureType": "humanoid (kobold)",
+      "alignment": "lawful evil",
+      "ac": 12,
+      "hp": {
+        "average": 5,
+        "formula": "2d6 - 2"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 7,
+        "dex": 15,
+        "con": 9,
+        "int": 8,
+        "wis": 7,
+        "cha": 8
+      },
+      "challenge": 0.125,
+      "description": "Kobolds are craven reptilian humanoids that worship evil dragons as demigods and serve them as minions and toadies."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.kobold.feature.sunlight-sensitivity",
+      "parentId": "srd.monster.kobold",
+      "name": "Sunlight Sensitivity",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "While in sunlight, the kobold has disadvantage on attack rolls, as well as on Wisdom (Perception) checks that rely on sight.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "attack",
+            "check.perception"
+          ],
+          "mode": "disadvantage",
+          "requires": "in sunlight"
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.kobold.feature.pack-tactics",
+      "parentId": "srd.monster.kobold",
+      "name": "Pack Tactics",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The kobold has advantage on an attack roll against a creature if at least one of the kobold's allies is within 5 feet of the creature and the ally isn't incapacitated.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "attack"
+          ],
+          "mode": "advantage",
+          "requires": "ally within 5 ft of target"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "understands all languages it knew in life but can't speak"
+      ],
+      "featureIds": [],
+      "actions": [
+        {
+          "name": "Shortsword",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "1d6 + 2",
+            "damageType": "piercing"
+          }
+        },
+        {
+          "name": "Shortbow",
+          "description": "Ranged Weapon Attack: +4 to hit, range 80/320 ft., one target. Hit: 5 (1d6 + 2) piercing damage.",
+          "attack": {
+            "kind": "ranged",
+            "bonus": 4,
+            "range": {
+              "normal": 80,
+              "long": 320
+            },
+            "damage": "1d6 + 2",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.skeleton",
+      "name": "Skeleton",
+      "size": "medium",
+      "creatureType": "undead",
+      "alignment": "lawful evil",
+      "ac": 13,
+      "hp": {
+        "average": 13,
+        "formula": "2d8 + 4"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 10,
+        "dex": 14,
+        "con": 15,
+        "int": 6,
+        "wis": 8,
+        "cha": 5
+      },
+      "challenge": 0.25,
+      "description": "Skeletons arise when animated by dark magic. They do whatever their creator commands."
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {
+        "wis": 0
+      },
+      "skills": {},
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "understands the languages it knew in life but can't speak"
+      ],
+      "featureIds": [
+        "srd.monster.zombie.feature.undead-fortitude"
+      ],
+      "actions": [
+        {
+          "name": "Slam",
+          "description": "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) bludgeoning damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 3,
+            "reach": 5,
+            "damage": "1d6 + 1",
+            "damageType": "bludgeoning"
+          }
+        }
+      ],
+      "id": "srd.monster.zombie",
+      "name": "Zombie",
+      "size": "medium",
+      "creatureType": "undead",
+      "alignment": "neutral evil",
+      "ac": 8,
+      "hp": {
+        "average": 22,
+        "formula": "3d8 + 9"
+      },
+      "speeds": {
+        "walk": 20
+      },
+      "abilities": {
+        "str": 13,
+        "dex": 6,
+        "con": 16,
+        "int": 3,
+        "wis": 6,
+        "cha": 5
+      },
+      "challenge": 0.25,
+      "description": "Zombies are corpses animated by dark magic. They retain no vestige of their former selves."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.zombie.feature.undead-fortitude",
+      "parentId": "srd.monster.zombie",
+      "name": "Undead Fortitude",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "If damage reduces the zombie to 0 hit points, it must make a Constitution saving throw with a DC of 5 + the damage taken, unless the damage is radiant or from a critical hit. On a success, the zombie drops to 1 hit point instead.",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "On reducing to 0 HP, Con save DC 5 + damage taken (unless radiant or crit) to drop to 1 HP instead."
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "perception": 3,
+        "stealth": 4
+      },
+      "senses": {},
+      "languages": [],
+      "featureIds": [
+        "srd.monster.wolf.feature.keen-hearing-and-smell",
+        "srd.monster.wolf.feature.pack-tactics"
+      ],
+      "actions": [
+        {
+          "name": "Bite",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 7 (2d4 + 2) piercing damage. If the target is a creature, it must succeed on a DC 11 Strength saving throw or be knocked prone.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "2d4 + 2",
+            "damageType": "piercing"
+          },
+          "save": {
+            "ability": "str",
+            "dc": 11,
+            "effectOnSave": "negates"
+          }
+        }
+      ],
+      "id": "srd.monster.wolf",
+      "name": "Wolf",
+      "size": "medium",
+      "creatureType": "beast",
+      "alignment": "unaligned",
+      "ac": 13,
+      "hp": {
+        "average": 11,
+        "formula": "2d8 + 2"
+      },
+      "speeds": {
+        "walk": 40
+      },
+      "abilities": {
+        "str": 12,
+        "dex": 15,
+        "con": 12,
+        "int": 3,
+        "wis": 12,
+        "cha": 6
+      },
+      "challenge": 0.25,
+      "description": "Wolves are pack hunters known for their persistence and cunning."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.wolf.feature.keen-hearing-and-smell",
+      "parentId": "srd.monster.wolf",
+      "name": "Keen Hearing and Smell",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The wolf has advantage on Wisdom (Perception) checks that rely on hearing or smell.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "check.perception"
+          ],
+          "mode": "advantage",
+          "requires": "hearing or smell"
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.wolf.feature.pack-tactics",
+      "parentId": "srd.monster.wolf",
+      "name": "Pack Tactics",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The wolf has advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 feet of the creature and the ally isn't incapacitated.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "attack"
+          ],
+          "mode": "advantage",
+          "requires": "ally within 5 ft of target"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "perception": 3
+      },
+      "senses": {},
+      "languages": [],
+      "featureIds": [
+        "srd.monster.brown-bear.feature.keen-smell"
+      ],
+      "actions": [
+        {
+          "name": "Multiattack",
+          "description": "The bear makes two attacks: one with its bite and one with its claws."
+        },
+        {
+          "name": "Bite",
+          "description": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 8 (1d8 + 4) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 5,
+            "reach": 5,
+            "damage": "1d8 + 4",
+            "damageType": "piercing"
+          }
+        },
+        {
+          "name": "Claws",
+          "description": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 11 (2d6 + 4) slashing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 5,
+            "reach": 5,
+            "damage": "2d6 + 4",
+            "damageType": "slashing"
+          }
+        }
+      ],
+      "id": "srd.monster.brown-bear",
+      "name": "Brown Bear",
+      "size": "large",
+      "creatureType": "beast",
+      "alignment": "unaligned",
+      "ac": 11,
+      "hp": {
+        "average": 34,
+        "formula": "4d10 + 12"
+      },
+      "speeds": {
+        "walk": 40,
+        "climb": 30
+      },
+      "abilities": {
+        "str": 19,
+        "dex": 10,
+        "con": 16,
+        "int": 2,
+        "wis": 13,
+        "cha": 7
+      },
+      "challenge": 1,
+      "description": "Brown bears are large, powerful predators."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.brown-bear.feature.keen-smell",
+      "parentId": "srd.monster.brown-bear",
+      "name": "Keen Smell",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The bear has advantage on Wisdom (Perception) checks that rely on smell.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "check.perception"
+          ],
+          "mode": "advantage",
+          "requires": "smell"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "stealth": 6,
+        "survival": 2
+      },
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "Common",
+        "Goblin"
+      ],
+      "featureIds": [
+        "srd.monster.bugbear.feature.brute",
+        "srd.monster.bugbear.feature.surprise-attack"
+      ],
+      "actions": [
+        {
+          "name": "Morningstar",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 11 (2d8 + 2) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "2d8 + 2",
+            "damageType": "piercing"
+          }
+        },
+        {
+          "name": "Javelin",
+          "description": "Melee or Ranged Weapon Attack: +4 to hit, reach 5 ft. or range 30/120 ft., one target. Hit: 9 (2d6 + 2) piercing damage in melee or 5 (1d6 + 2) piercing damage at range.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "2d6 + 2",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.bugbear",
+      "name": "Bugbear",
+      "size": "medium",
+      "creatureType": "humanoid (goblinoid)",
+      "alignment": "chaotic evil",
+      "ac": 16,
+      "hp": {
+        "average": 27,
+        "formula": "5d8 + 5"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 15,
+        "dex": 14,
+        "con": 13,
+        "int": 8,
+        "wis": 11,
+        "cha": 9
+      },
+      "challenge": 1,
+      "description": "Bugbears are hairy goblinoids born for battle and mayhem."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.bugbear.feature.brute",
+      "parentId": "srd.monster.bugbear",
+      "name": "Brute",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A melee weapon deals one extra die of its damage when the bugbear hits with it (included in the attack).",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Melee weapons deal one extra damage die (included in attacks)."
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.bugbear.feature.surprise-attack",
+      "parentId": "srd.monster.bugbear",
+      "name": "Surprise Attack",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "If the bugbear surprises a creature and hits it with an attack during the first round of combat, the target takes an extra 7 (2d6) damage from the attack.",
+      "effects": [
+        {
+          "type": "damageBonus",
+          "when": [
+            "attack"
+          ],
+          "value": "2d6",
+          "requires": "surprise, first round"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [
+        "Common",
+        "Goblin"
+      ],
+      "featureIds": [
+        "srd.monster.hobgoblin.feature.martial-advantage"
+      ],
+      "actions": [
+        {
+          "name": "Longsword",
+          "description": "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 5 (1d8 + 1) slashing damage, or 6 (1d10 + 1) slashing damage if used with two hands.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 3,
+            "reach": 5,
+            "damage": "1d8 + 1",
+            "damageType": "slashing"
+          }
+        },
+        {
+          "name": "Longbow",
+          "description": "Ranged Weapon Attack: +3 to hit, range 150/600 ft., one target. Hit: 5 (1d8 + 1) piercing damage.",
+          "attack": {
+            "kind": "ranged",
+            "bonus": 3,
+            "range": {
+              "normal": 150,
+              "long": 600
+            },
+            "damage": "1d8 + 1",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.hobgoblin",
+      "name": "Hobgoblin",
+      "size": "medium",
+      "creatureType": "humanoid (goblinoid)",
+      "alignment": "lawful evil",
+      "ac": 18,
+      "hp": {
+        "average": 11,
+        "formula": "2d8 + 2"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 13,
+        "dex": 12,
+        "con": 12,
+        "int": 10,
+        "wis": 10,
+        "cha": 9
+      },
+      "challenge": 0.5,
+      "description": "Hobgoblins are cunning, disciplined goblinoids that wage endless wars of conquest."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.hobgoblin.feature.martial-advantage",
+      "parentId": "srd.monster.hobgoblin",
+      "name": "Martial Advantage",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "Once per turn, the hobgoblin can deal an extra 7 (2d6) damage to a creature it hits with a weapon attack if that creature is within 5 feet of an ally of the hobgoblin that isn't incapacitated.",
+      "effects": [
+        {
+          "type": "damageBonus",
+          "when": [
+            "attack.weapon"
+          ],
+          "value": "2d6",
+          "requires": "ally within 5 ft of target, once per turn"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "perception": 3
+      },
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [],
+      "featureIds": [
+        "srd.monster.owlbear.feature.keen-sight-and-smell"
+      ],
+      "actions": [
+        {
+          "name": "Multiattack",
+          "description": "The owlbear makes two attacks: one with its beak and one with its claws."
+        },
+        {
+          "name": "Beak",
+          "description": "Melee Weapon Attack: +7 to hit, reach 5 ft., one creature. Hit: 10 (1d10 + 5) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 7,
+            "reach": 5,
+            "damage": "1d10 + 5",
+            "damageType": "piercing"
+          }
+        },
+        {
+          "name": "Claws",
+          "description": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 14 (2d8 + 5) slashing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 7,
+            "reach": 5,
+            "damage": "2d8 + 5",
+            "damageType": "slashing"
+          }
+        }
+      ],
+      "id": "srd.monster.owlbear",
+      "name": "Owlbear",
+      "size": "large",
+      "creatureType": "monstrosity",
+      "alignment": "unaligned",
+      "ac": 13,
+      "hp": {
+        "average": 59,
+        "formula": "7d10 + 21"
+      },
+      "speeds": {
+        "walk": 40
+      },
+      "abilities": {
+        "str": 20,
+        "dex": 12,
+        "con": 17,
+        "int": 3,
+        "wis": 12,
+        "cha": 7
+      },
+      "challenge": 3,
+      "description": "An owlbear is a monstrous cross between an owl and a bear."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.owlbear.feature.keen-sight-and-smell",
+      "parentId": "srd.monster.owlbear",
+      "name": "Keen Sight and Smell",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The owlbear has advantage on Wisdom (Perception) checks that rely on sight or smell.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "check.perception"
+          ],
+          "mode": "advantage",
+          "requires": "sight or smell"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {
+        "blindsight": 60
+      },
+      "languages": [],
+      "featureIds": [
+        "srd.monster.gelatinous-cube.feature.ooze-cube",
+        "srd.monster.gelatinous-cube.feature.transparent"
+      ],
+      "actions": [
+        {
+          "name": "Pseudopod",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one creature. Hit: 10 (3d6) acid damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "3d6",
+            "damageType": "acid"
+          }
+        },
+        {
+          "name": "Engulf",
+          "description": "The cube moves up to its speed. While doing so, it can enter Large or smaller creatures' spaces. Whenever the cube enters a creature's space, the creature must make a DC 12 Dexterity saving throw. On a success, the creature can choose to be pushed 5 feet back or to the side; a creature that chooses not to be pushed suffers the consequences of a failed saving throw. On a failed save, the cube enters the creature's space, the creature takes 10 (3d6) acid damage and is engulfed.",
+          "save": {
+            "ability": "dex",
+            "dc": 12,
+            "effectOnSave": "negates"
+          }
+        }
+      ],
+      "id": "srd.monster.gelatinous-cube",
+      "name": "Gelatinous Cube",
+      "size": "large",
+      "creatureType": "ooze",
+      "alignment": "unaligned",
+      "ac": 6,
+      "hp": {
+        "average": 84,
+        "formula": "8d10 + 40"
+      },
+      "speeds": {
+        "walk": 15
+      },
+      "abilities": {
+        "str": 14,
+        "dex": 3,
+        "con": 20,
+        "int": 1,
+        "wis": 6,
+        "cha": 1
+      },
+      "challenge": 2,
+      "description": "Gelatinous cubes scour dungeon passages in silent, predictable patterns, engulfing creatures that cross their path."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.gelatinous-cube.feature.ooze-cube",
+      "parentId": "srd.monster.gelatinous-cube",
+      "name": "Ooze Cube",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The cube takes up its entire space. Other creatures can enter the space, but a creature that does so is subjected to the cube's Engulf and has disadvantage on the saving throw. Creatures inside the cube can be seen but have total cover. A creature within 5 feet of the cube can take an action to pull a creature or object out of the cube, requiring a successful DC 12 Strength check.",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Fills its space; engulfed creatures have total cover; DC 12 Strength to pull someone out."
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.gelatinous-cube.feature.transparent",
+      "parentId": "srd.monster.gelatinous-cube",
+      "name": "Transparent",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "Even when the cube is in plain sight, it takes a successful DC 15 Wisdom (Perception) check to spot a cube that has neither moved nor attacked. A creature that tries to enter the cube's space while unaware of the cube is surprised by the cube.",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "DC 15 Perception to spot when motionless; unaware entrants are surprised."
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "stealth": 5
+      },
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [],
+      "featureIds": [
+        "srd.monster.mimic.feature.shapechanger",
+        "srd.monster.mimic.feature.adhesive",
+        "srd.monster.mimic.feature.false-appearance",
+        "srd.monster.mimic.feature.grappler"
+      ],
+      "actions": [
+        {
+          "name": "Pseudopod",
+          "description": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 7 (1d8 + 3) bludgeoning damage. If the mimic is in object form, the target is subjected to its Adhesive trait.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 5,
+            "reach": 5,
+            "damage": "1d8 + 3",
+            "damageType": "bludgeoning"
+          }
+        },
+        {
+          "name": "Bite",
+          "description": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 7 (1d8 + 3) piercing damage plus 4 (1d8) acid damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 5,
+            "reach": 5,
+            "damage": "1d8 + 3",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.mimic",
+      "name": "Mimic",
+      "size": "medium",
+      "creatureType": "monstrosity (shapechanger)",
+      "alignment": "neutral",
+      "ac": 12,
+      "hp": {
+        "average": 58,
+        "formula": "9d8 + 18"
+      },
+      "speeds": {
+        "walk": 15
+      },
+      "abilities": {
+        "str": 17,
+        "dex": 12,
+        "con": 15,
+        "int": 5,
+        "wis": 13,
+        "cha": 8
+      },
+      "challenge": 2,
+      "description": "Mimics are shapeshifting predators that take the form of inanimate objects to lure prey."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.mimic.feature.shapechanger",
+      "parentId": "srd.monster.mimic",
+      "name": "Shapechanger",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The mimic can use its action to polymorph into an object or back into its true, amorphous form. Its statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies.",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Polymorph into an object or back to amorphous form."
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.mimic.feature.adhesive",
+      "parentId": "srd.monster.mimic",
+      "name": "Adhesive (Object Form Only)",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic is also grappled by it (escape DC 13). Ability checks made to escape this grapple have disadvantage.",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Adheres to touch; grappled escape DC 13 with disadvantage."
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.mimic.feature.false-appearance",
+      "parentId": "srd.monster.mimic",
+      "name": "False Appearance (Object Form Only)",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "While the mimic remains motionless, it is indistinguishable from an ordinary object.",
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Indistinguishable from an ordinary object while motionless."
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.mimic.feature.grappler",
+      "parentId": "srd.monster.mimic",
+      "name": "Grappler",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The mimic has advantage on attack rolls against any creature grappled by it.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "attack"
+          ],
+          "mode": "advantage",
+          "requires": "target grappled by mimic"
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {
+        "dex": 6,
+        "con": 13,
+        "wis": 7,
+        "cha": 11
+      },
+      "skills": {
+        "perception": 13,
+        "stealth": 6
+      },
+      "senses": {
+        "blindsight": 60,
+        "darkvision": 120
+      },
+      "languages": [
+        "Common",
+        "Draconic"
+      ],
+      "featureIds": [
+        "srd.monster.adult-red-dragon.feature.legendary-resistance"
+      ],
+      "actions": [
+        {
+          "name": "Multiattack",
+          "description": "The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws."
+        },
+        {
+          "name": "Bite",
+          "description": "Melee Weapon Attack: +14 to hit, reach 10 ft., one target. Hit: 19 (2d10 + 8) piercing damage plus 7 (2d6) fire damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 14,
+            "reach": 10,
+            "damage": "2d10 + 8",
+            "damageType": "piercing"
+          }
+        },
+        {
+          "name": "Claw",
+          "description": "Melee Weapon Attack: +14 to hit, reach 5 ft., one target. Hit: 15 (2d6 + 8) slashing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 14,
+            "reach": 5,
+            "damage": "2d6 + 8",
+            "damageType": "slashing"
+          }
+        },
+        {
+          "name": "Tail",
+          "description": "Melee Weapon Attack: +14 to hit, reach 15 ft., one target. Hit: 17 (2d8 + 8) bludgeoning damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 14,
+            "reach": 15,
+            "damage": "2d8 + 8",
+            "damageType": "bludgeoning"
+          }
+        },
+        {
+          "name": "Frightful Presence",
+          "description": "Each creature of the dragon's choice that is within 120 feet of the dragon and aware of it must succeed on a DC 19 Wisdom saving throw or become frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to the dragon's Frightful Presence for the next 24 hours.",
+          "save": {
+            "ability": "wis",
+            "dc": 19,
+            "effectOnSave": "negates"
+          }
+        },
+        {
+          "name": "Fire Breath (Recharge 5–6)",
+          "description": "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 63 (18d6) fire damage on a failed save, or half as much damage on a successful one.",
+          "save": {
+            "ability": "dex",
+            "dc": 21,
+            "effectOnSave": "half"
+          },
+          "uses": {
+            "max": 1,
+            "recharge": {
+              "kind": "rechargeDie",
+              "die": 6,
+              "min": 5
+            }
+          }
+        }
+      ],
+      "id": "srd.monster.adult-red-dragon",
+      "name": "Adult Red Dragon",
+      "size": "huge",
+      "creatureType": "dragon",
+      "alignment": "chaotic evil",
+      "ac": 19,
+      "hp": {
+        "average": 256,
+        "formula": "19d12 + 133"
+      },
+      "speeds": {
+        "walk": 40,
+        "climb": 40,
+        "fly": 80
+      },
+      "abilities": {
+        "str": 27,
+        "dex": 10,
+        "con": 25,
+        "int": 16,
+        "wis": 13,
+        "cha": 21
+      },
+      "challenge": 17,
+      "description": "The most covetous of the true dragons, red dragons tirelessly seek to increase their treasure hoards."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.adult-red-dragon.feature.legendary-resistance",
+      "parentId": "srd.monster.adult-red-dragon",
+      "name": "Legendary Resistance (3/Day)",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "If the dragon fails a saving throw, it can choose to succeed instead.",
+      "uses": {
+        "max": 3,
+        "recharge": {
+          "kind": "dawn"
+        }
+      },
+      "effects": [
+        {
+          "type": "descriptive",
+          "text": "Turn a failed save into a success, 3/day."
+        }
+      ]
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {},
+      "languages": [
+        "any one language (usually Common)"
+      ],
+      "featureIds": [],
+      "actions": [
+        {
+          "name": "Scimitar",
+          "description": "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) slashing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 3,
+            "reach": 5,
+            "damage": "1d6 + 1",
+            "damageType": "slashing"
+          }
+        },
+        {
+          "name": "Light Crossbow",
+          "description": "Ranged Weapon Attack: +3 to hit, range 80/320 ft., one target. Hit: 5 (1d8 + 1) piercing damage.",
+          "attack": {
+            "kind": "ranged",
+            "bonus": 3,
+            "range": {
+              "normal": 80,
+              "long": 320
+            },
+            "damage": "1d8 + 1",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.bandit",
+      "name": "Bandit",
+      "size": "medium",
+      "creatureType": "humanoid (any race)",
+      "alignment": "any non-lawful alignment",
+      "ac": 12,
+      "hp": {
+        "average": 11,
+        "formula": "2d8 + 2"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 11,
+        "dex": 12,
+        "con": 12,
+        "int": 10,
+        "wis": 10,
+        "cha": 10
+      },
+      "challenge": 0.125,
+      "description": "Bandits rove in gangs and are often led by thugs, veterans, or spellcasters."
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {
+        "perception": 2
+      },
+      "senses": {},
+      "languages": [
+        "any one language (usually Common)"
+      ],
+      "featureIds": [],
+      "actions": [
+        {
+          "name": "Spear",
+          "description": "Melee or Ranged Weapon Attack: +3 to hit, reach 5 ft. or range 20/60 ft., one target. Hit: 4 (1d6 + 1) piercing damage, or 5 (1d8 + 1) piercing damage if used with two hands to make a melee attack.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 3,
+            "reach": 5,
+            "damage": "1d6 + 1",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.guard",
+      "name": "Guard",
+      "size": "medium",
+      "creatureType": "humanoid (any race)",
+      "alignment": "any alignment",
+      "ac": 16,
+      "hp": {
+        "average": 11,
+        "formula": "2d8 + 2"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 13,
+        "dex": 12,
+        "con": 12,
+        "int": 10,
+        "wis": 11,
+        "cha": 10
+      },
+      "challenge": 0.125,
+      "description": "Guards include members of a city watch, castle guards, and similar defenders."
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {},
+      "languages": [
+        "any one language (usually Common)"
+      ],
+      "featureIds": [],
+      "actions": [
+        {
+          "name": "Club",
+          "description": "Melee Weapon Attack: +2 to hit, reach 5 ft., one target. Hit: 2 (1d4) bludgeoning damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 2,
+            "reach": 5,
+            "damage": "1d4",
+            "damageType": "bludgeoning"
+          }
+        }
+      ],
+      "id": "srd.monster.commoner",
+      "name": "Commoner",
+      "size": "medium",
+      "creatureType": "humanoid (any race)",
+      "alignment": "any alignment",
+      "ac": 10,
+      "hp": {
+        "average": 4,
+        "formula": "1d8"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 10,
+        "dex": 10,
+        "con": 10,
+        "int": 10,
+        "wis": 10,
+        "cha": 10
+      },
+      "challenge": 0,
+      "description": "Commoners include peasants, serfs, slaves, servants, pilgrims, merchants, artisans, and hermits."
+    },
+    {
+      "kind": "monster",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "visibility": "public",
+      "tags": [
+        "srd",
+        "monster"
+      ],
+      "savingThrows": {},
+      "skills": {},
+      "senses": {
+        "darkvision": 60
+      },
+      "languages": [],
+      "featureIds": [
+        "srd.monster.giant-rat.feature.keen-smell",
+        "srd.monster.giant-rat.feature.pack-tactics"
+      ],
+      "actions": [
+        {
+          "name": "Bite",
+          "description": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 4 (1d4 + 2) piercing damage.",
+          "attack": {
+            "kind": "melee",
+            "bonus": 4,
+            "reach": 5,
+            "damage": "1d4 + 2",
+            "damageType": "piercing"
+          }
+        }
+      ],
+      "id": "srd.monster.giant-rat",
+      "name": "Giant Rat",
+      "size": "small",
+      "creatureType": "beast",
+      "alignment": "unaligned",
+      "ac": 12,
+      "hp": {
+        "average": 7,
+        "formula": "2d6"
+      },
+      "speeds": {
+        "walk": 30
+      },
+      "abilities": {
+        "str": 7,
+        "dex": 15,
+        "con": 11,
+        "int": 2,
+        "wis": 10,
+        "cha": 4
+      },
+      "challenge": 0.125,
+      "description": "Giant rats infest sewers, caves, and ruins."
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.giant-rat.feature.keen-smell",
+      "parentId": "srd.monster.giant-rat",
+      "name": "Keen Smell",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The rat has advantage on Wisdom (Perception) checks that rely on smell.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "check.perception"
+          ],
+          "mode": "advantage",
+          "requires": "smell"
+        }
+      ]
+    },
+    {
+      "kind": "feature",
+      "id": "srd.monster.giant-rat.feature.pack-tactics",
+      "parentId": "srd.monster.giant-rat",
+      "name": "Pack Tactics",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "The rat has advantage on an attack roll against a creature if at least one of the rat's allies is within 5 feet of the creature and the ally isn't incapacitated.",
+      "effects": [
+        {
+          "type": "advantage",
+          "on": [
+            "attack"
+          ],
+          "mode": "advantage",
+          "requires": "ally within 5 ft of target"
+        }
+      ]
+    }
+  ]
+}

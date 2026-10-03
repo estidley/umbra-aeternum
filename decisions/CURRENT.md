@@ -4,13 +4,13 @@ Fill this when you clone the template. Until then, values are placeholders. **Re
 
 | Item | Status |
 | --- | --- |
-| Name | _TBD_ |
+| Name | **Umbra** |
 | Deployment kind | **`app-web`** (default). Other kinds: see `stack/OTHER-DEPLOYMENTS.md` — do not invent A–D phases. |
 | Current phase | **A1** — identity + core score/logging + Postgres-shaped Prisma |
 | V1 surface | Mobile-first **web**. Desktop / regular web shell at `lg`. Native iOS/Android **last** (D4). |
 | Code | Original implementation only — do not clone third-party app repos |
 | Token posture | Thin prompts. Lock decisions before code. Core data plane first. |
-| GitHub | _this product’s repo URL_ |
+| GitHub | https://github.com/estidley/umbra-aeternum |
 | Theme | _lock in Figma before deep UI (A4)_ |
 | Domain | _TBD_ |
 | Cloud | **Railway** — one Railpack-built Next.js service + Railway PostgreSQL + volume at `/data` |
@@ -48,3 +48,13 @@ Next.js App Router + TypeScript + Tailwind + Prisma + **Postgres 16** + email/pa
 - Per-user PII on admin KPI dashboards
 - Native apps before D4
 - Copying Bragline or any other product’s application source
+
+## Locked 2026-10-03 — Umbra client slice
+
+This snapshot row stays `app-web` / **A1** because that is the playbook process label. The code in this repo is **not** a Next.js app and is **not** deployed to Railway in this slice.
+
+- Native Android, Kotlin, Jetpack Compose Material 3, minSdk 28, applicationId `com.estidley.umbra`.
+- Not Expo. Not a web app. Not Figma-driven.
+- Client of a separate Hermes HTTP API (Webb). No Hermes server, no Railway service, no login API in this repo.
+- Local display-name gate only. API key and base URL stay on device.
+

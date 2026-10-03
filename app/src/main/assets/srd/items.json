@@ -1,0 +1,477 @@
+{
+  "id": "srd-5.1",
+  "name": "SRD 5.1",
+  "edition": "2014",
+  "version": "1.0.0",
+  "source": {
+    "name": "SRD 5.1",
+    "license": "ogl-1.0a"
+  },
+  "visibility": "public",
+  "entities": [
+    {
+      "kind": "item",
+      "id": "srd.item.dagger",
+      "name": "Dagger",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 2,
+        "unit": "gp"
+      },
+      "weight": 1,
+      "weapon": {
+        "damage": "1d4",
+        "damageType": "piercing",
+        "properties": [
+          "finesse",
+          "light",
+          "thrown"
+        ],
+        "range": {
+          "normal": 20,
+          "long": 60
+        },
+        "category": "simple"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.shortsword",
+      "name": "Shortsword",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 10,
+        "unit": "gp"
+      },
+      "weight": 2,
+      "weapon": {
+        "damage": "1d6",
+        "damageType": "piercing",
+        "properties": [
+          "finesse",
+          "light"
+        ],
+        "category": "martial"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.longsword",
+      "name": "Longsword",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 15,
+        "unit": "gp"
+      },
+      "weight": 3,
+      "weapon": {
+        "damage": "1d8",
+        "damageType": "slashing",
+        "properties": [
+          "versatile"
+        ],
+        "versatile": "1d10",
+        "category": "martial"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.greataxe",
+      "name": "Greataxe",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 30,
+        "unit": "gp"
+      },
+      "weight": 7,
+      "weapon": {
+        "damage": "1d12",
+        "damageType": "slashing",
+        "properties": [
+          "heavy",
+          "twohanded"
+        ],
+        "category": "martial"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.rapier",
+      "name": "Rapier",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 25,
+        "unit": "gp"
+      },
+      "weight": 2,
+      "weapon": {
+        "damage": "1d8",
+        "damageType": "piercing",
+        "properties": [
+          "finesse"
+        ],
+        "category": "martial"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.quarterstaff",
+      "name": "Quarterstaff",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 1,
+        "unit": "gp"
+      },
+      "weight": 4,
+      "weapon": {
+        "damage": "1d6",
+        "damageType": "bludgeoning",
+        "properties": [
+          "versatile"
+        ],
+        "versatile": "1d8",
+        "category": "simple"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.shortbow",
+      "name": "Shortbow",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 25,
+        "unit": "gp"
+      },
+      "weight": 2,
+      "weapon": {
+        "damage": "1d6",
+        "damageType": "piercing",
+        "properties": [
+          "ammunition",
+          "twohanded"
+        ],
+        "range": {
+          "normal": 80,
+          "long": 320
+        },
+        "category": "simple"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.longbow",
+      "name": "Longbow",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 50,
+        "unit": "gp"
+      },
+      "weight": 2,
+      "weapon": {
+        "damage": "1d8",
+        "damageType": "piercing",
+        "properties": [
+          "ammunition",
+          "heavy",
+          "twohanded"
+        ],
+        "range": {
+          "normal": 150,
+          "long": 600
+        },
+        "category": "martial"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.mace",
+      "name": "Mace",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "weapon",
+      "rarity": "none",
+      "cost": {
+        "amount": 5,
+        "unit": "gp"
+      },
+      "weight": 4,
+      "weapon": {
+        "damage": "1d6",
+        "damageType": "bludgeoning",
+        "properties": [],
+        "category": "simple"
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.leather-armor",
+      "name": "Leather Armor",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "armor",
+      "rarity": "none",
+      "cost": {
+        "amount": 10,
+        "unit": "gp"
+      },
+      "weight": 10,
+      "armor": {
+        "baseAc": 11,
+        "addDex": true,
+        "stealthDisadvantage": false
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.studded-leather",
+      "name": "Studded Leather",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "armor",
+      "rarity": "none",
+      "cost": {
+        "amount": 45,
+        "unit": "gp"
+      },
+      "weight": 13,
+      "armor": {
+        "baseAc": 12,
+        "addDex": true,
+        "stealthDisadvantage": false
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.chain-shirt",
+      "name": "Chain Shirt",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "armor",
+      "rarity": "none",
+      "cost": {
+        "amount": 50,
+        "unit": "gp"
+      },
+      "weight": 20,
+      "armor": {
+        "baseAc": 13,
+        "addDex": true,
+        "stealthDisadvantage": false,
+        "maxDex": 2
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.half-plate",
+      "name": "Half Plate",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "armor",
+      "rarity": "none",
+      "cost": {
+        "amount": 750,
+        "unit": "gp"
+      },
+      "weight": 40,
+      "armor": {
+        "baseAc": 15,
+        "addDex": true,
+        "stealthDisadvantage": true,
+        "maxDex": 2
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.chain-mail",
+      "name": "Chain Mail",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "armor",
+      "rarity": "none",
+      "cost": {
+        "amount": 75,
+        "unit": "gp"
+      },
+      "weight": 55,
+      "armor": {
+        "baseAc": 16,
+        "addDex": false,
+        "stealthDisadvantage": true,
+        "maxDex": 0,
+        "strengthRequirement": 13
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.plate",
+      "name": "Plate",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "",
+      "itemType": "armor",
+      "rarity": "none",
+      "cost": {
+        "amount": 1500,
+        "unit": "gp"
+      },
+      "weight": 65,
+      "armor": {
+        "baseAc": 18,
+        "addDex": false,
+        "stealthDisadvantage": true,
+        "maxDex": 0,
+        "strengthRequirement": 15
+      },
+      "effects": []
+    },
+    {
+      "kind": "item",
+      "id": "srd.item.shield",
+      "name": "Shield",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "A shield is made from wood or metal and is carried in one hand.",
+      "itemType": "shield",
+      "rarity": "none",
+      "cost": {
+        "amount": 10,
+        "unit": "gp"
+      },
+      "weight": 6,
+      "effects": [
+        {
+          "type": "acBonus",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "kind": "magicItem",
+      "id": "srd.item.ring-of-protection",
+      "name": "Ring of Protection",
+      "edition": "2014",
+      "source": {
+        "name": "SRD 5.1",
+        "license": "ogl-1.0a"
+      },
+      "description": "You gain a +1 bonus to AC and saving throws while wearing this ring.",
+      "itemType": "wondrous",
+      "rarity": "rare",
+      "attunement": true,
+      "weight": 0,
+      "effects": [
+        {
+          "type": "acBonus",
+          "value": 1
+        },
+        {
+          "type": "attackBonus",
+          "when": [
+            "save"
+          ],
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

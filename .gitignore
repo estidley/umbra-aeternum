@@ -36,3 +36,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .vercel
+
+# Android
+local.properties
+.gradle/
+**/build/
+*.apk
+*.aab
+*.keystore
+*.jks
+captures/
+.externalNativeBuild/
+.cxx/
