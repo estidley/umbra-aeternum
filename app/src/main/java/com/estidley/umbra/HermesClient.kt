@@ -119,6 +119,24 @@ class HermesClient {
         return assistantText(raw)
     }
 
+    fun chatRoll(baseUrl: String, sessionToken: String, check: String, mode: String, result: Int, character: String, expression: String): String {
+        val url = normalizeBase(baseUrl) + "/api/chat/roll"
+        val body = JSONObject()
+            .put("check", check)
+            .put("mode", mode)
+            .put("result", result)
+            .put("character", character)
+            .put("expression", expression)
+        val request = Request.Builder()
+            .url(url)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer $sessionToken")
+            .post(body.toString().toRequestBody(JSON))
+            .build()
+        val raw = execute(chatHttp, request)
+        return assistantText(raw)
+    }
+
     fun chatHistory(baseUrl: String, sessionToken: String): List<ChatHistoryMessage> {
         val all = mutableListOf<ChatHistoryMessage>()
         var offset = 0

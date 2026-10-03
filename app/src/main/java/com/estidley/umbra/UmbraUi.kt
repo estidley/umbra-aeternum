@@ -118,11 +118,9 @@ private val Skills = listOf(
     "survival" to "Survival",
 )
 
-data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String, val serverId: Long? = null, val createdAt: String? = null, val speakerId: String = "", val beats: List<SpeechBeat> = emptyList())
+data class ChatLine(val role: String, val text: String, val speaker: String, val apiContent: String, val serverId: Long? = null, val createdAt: String? = null, val speakerId: String = "", val beats: List<SpeechBeat> = emptyList(), val portrait: String? = null)
 
 data class RollPrompt(val name: String, val purpose: String, val bonus: Int)
-
-data class DieShow(val id: Long, val caption: String)
 
 data class UmbraUiState(
     val connected: Boolean = false,
@@ -358,6 +356,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     createdAt = message.createdAt,
                     speakerId = reply.turn.speakerId,
                     beats = reply.turn.beats,
+                    portrait = reply.turn.speakerPortrait,
                 )
             }
             else -> null
@@ -545,72 +544,127 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     "ERROR:" + (e.message ?: "Chat failed")
                 }
             }
-            if (!_state.value.connected) {
-                _state.update { it.copy(busy = false, awaitingReply = false) }
-                return@launch
-            }
-            if (raw.startsWith("ERROR:")) {
-                _state.update {
-                    it.copy(busy = false, awaitingReply = false, lines = history + ChatLine("error", raw.removePrefix("ERROR:"), "Error", raw))
-                }
-                return@launch
-            }
-            when (val reply = SceneJson.parseAssistant(raw)) {
-                AssistantReply.Incomplete -> {
-                    _state.update {
-                        it.copy(
-                            busy = false,
-                            awaitingReply = false,
-                            lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", raw),
-                            pending = null,
-                            rollPrompt = null,
-                        )
-                    }
-                }
-                is AssistantReply.Complete -> {
-                    val turn = reply.turn
-                    val spoken = if (turn.beats.isNotEmpty()) turn.beats.joinToString("\n") { it.text } else turn.text
-                    val ask = RollAsks.parse(spoken)
-                    val prompt = ask?.let { parsed -> RollPrompt(parsed.name, parsed.purpose, parsed.bonus(store.character())) }
-                    val notes = mutableListOf<String>()
-                    for (proposal in turn.proposals) {
-                        notes += try {
-                            store.applyProposal(proposal)
-                        } catch (e: Exception) {
-                            "Could not apply"
-                        }
-                    }
-                    _state.update {
-                        it.copy(
-                            busy = false,
-                            awaitingReply = false,
-                            lines = history + ChatLine("assistant", turn.text, turn.speakerName, raw, speakerId = turn.speakerId, beats = turn.beats),
-                            present = turn.present ?: emptyList(),
-                            locationName = turn.locationName ?: it.locationName,
-                            banner = if (notes.isEmpty()) "" else notes.joinToString("\n"),
-                            pending = null,
-                            rollPrompt = prompt,
-                            character = store.character(),
-                            book = store.book(),
-                            sheetTick = it.sheetTick + 1,
-                        )
-                    }
-                }
-            }
+            applyAssistant(history, raw)
         }
     }
 
     fun pickRollMode(mode: String) {
         val prompt = _state.value.rollPrompt ?: return
-        dieSerial += 1
-        val caption = prompt.name + ": " + rollCheck(prompt.bonus, mode)
-        _state.update { it.copy(rollPrompt = null, dieShow = DieShow(dieSerial, caption)) }
+        showResolvedCheck(prompt.name, rollD20Check(prompt.bonus, mode))
     }
 
-    fun flashRoll(caption: String) {
+    fun rollNamedCheck(name: String, bonus: Int, mode: String = "normal") {
+        showResolvedCheck(name, rollD20Check(bonus, mode))
+    }
+
+    private fun showResolvedCheck(name: String, roll: CheckRoll) {
+        val who = characterName()
+        val expression = rollExpression(roll)
+        showDice(shownDiceForCheck(roll), roll.total, rollHistoryLine(who, name, expression), name, roll.mode, expression, who)
+    }
+
+    private fun characterName(): String {
+        val named = store.character().optString("name").trim()
+        return named.ifBlank { store.displayName().trim() }.ifBlank { "Adventurer" }
+    }
+
+    fun showPool(pool: PoolRoll) {
+        showDice(pool.dice, pool.total, pool.text, null, null)
+    }
+
+    fun showDamage(label: String, amount: Int) {
+        val sides = listOf(4, 6, 8, 10, 12, 20).firstOrNull { amount in 1..it }
+        val dice = if (sides == null) emptyList() else listOf(ShownDie(sides, amount))
+        showDice(dice, amount, label, null, null)
+    }
+
+    private fun showDice(dice: List<ShownDie>, total: Int, caption: String, checkName: String?, mode: String?, expression: String? = null, character: String? = null) {
         dieSerial += 1
-        val id = dieSerial
-        _state.update { it.copy(dieShow = DieShow(id, caption)) }
+        _state.update {
+            it.copy(
+                dieShow = DieShow(id = dieSerial, dice = dice, total = total, caption = caption, checkName = checkName, mode = mode, expression = expression, character = character),
+                rollPrompt = null,
+            )
+        }
+    }
+
+    fun confirmDie() {
+        val show = _state.value.dieShow ?: return
+        _state.update { it.copy(dieShow = null) }
+        val check = show.checkName ?: return
+        val mode = show.mode ?: return
+        val expression = show.expression ?: return
+        if (mode != "normal" && mode != "advantage" && mode != "disadvantage") return
+        val character = show.character?.trim().orEmpty().ifBlank { characterName() }
+        val result = show.total
+        val sentence = rollHistoryLine(character, check, expression)
+        val history = _state.value.lines + ChatLine("user", sentence, "You", sentence, speakerId = "player")
+        _state.update { it.copy(lines = history, busy = true, awaitingReply = true, banner = "", tab = "chat") }
+        viewModelScope.launch {
+            val raw = withContext(Dispatchers.IO) {
+                try {
+                    hermes.chatRoll(store.baseUrl(), store.sessionToken(), check, mode, result, character, expression)
+                } catch (e: Exception) {
+                    "ERROR:" + (e.message ?: "Roll failed")
+                }
+            }
+            applyAssistant(history, raw)
+        }
+    }
+
+    private fun applyAssistant(history: List<ChatLine>, raw: String) {
+        if (!_state.value.connected) {
+            _state.update { it.copy(busy = false, awaitingReply = false) }
+            return
+        }
+        if (raw.startsWith("ERROR:")) {
+            _state.update {
+                it.copy(busy = false, awaitingReply = false, lines = history + ChatLine("error", raw.removePrefix("ERROR:"), "Error", raw))
+            }
+            return
+        }
+        when (val reply = SceneJson.parseAssistant(raw)) {
+            AssistantReply.Incomplete -> {
+                _state.update {
+                    it.copy(
+                        busy = false,
+                        awaitingReply = false,
+                        lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", raw),
+                        pending = null,
+                        rollPrompt = null,
+                    )
+                }
+            }
+            is AssistantReply.Complete -> {
+                val turn = reply.turn
+                val spoken = if (turn.beats.isNotEmpty()) turn.beats.joinToString("\n") { it.text } else turn.text
+                val ask = RollAsks.parse(spoken)
+                val prompt = ask?.let { parsed -> RollPrompt(parsed.name, parsed.purpose, parsed.bonus(store.character())) }
+                val notes = mutableListOf<String>()
+                for (proposal in turn.proposals) {
+                    notes += try {
+                        store.applyProposal(proposal)
+                    } catch (e: Exception) {
+                        "Could not apply"
+                    }
+                }
+                _state.update {
+                    it.copy(
+                        busy = false,
+                        awaitingReply = false,
+                        lines = history + ChatLine("assistant", turn.text, turn.speakerName, raw, speakerId = turn.speakerId, beats = turn.beats, portrait = turn.speakerPortrait),
+                        present = turn.present ?: it.present,
+                        locationName = turn.locationName ?: it.locationName,
+                        banner = if (notes.isEmpty()) "" else notes.joinToString("\n"),
+                        pending = null,
+                        rollPrompt = prompt,
+                        character = store.character(),
+                        book = store.book(),
+                        sheetTick = it.sheetTick + 1,
+                    )
+                }
+            }
+        }
     }
 
     fun speakerBubbleColor(explicitId: String, name: String, present: List<ScenePerson>): Color {
@@ -821,7 +875,7 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
                 }
             }
         }
-        EmberDieFade(state.dieShow?.id ?: 0L, state.dieShow?.caption.orEmpty())
+        NumberedDiceOverlay(state.dieShow, model::confirmDie)
         }
     }
 }
@@ -980,7 +1034,7 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(state.lines) { line ->
-                        ChatBubbles(line, hand, state.present, model)
+                        ChatBubbles(line, hand, state.present, model, state.character?.optString("name").orEmpty())
                     }
                     if (state.awaitingReply) {
                         item { TypingLine(hand) }
@@ -1041,9 +1095,9 @@ private fun isUmbraVoice(name: String, id: String): Boolean {
 }
 
 @Composable
-private fun ChatBubbles(line: ChatLine, hand: FontFamily, present: List<ScenePerson>, model: UmbraViewModel) {
+private fun ChatBubbles(line: ChatLine, hand: FontFamily, present: List<ScenePerson>, model: UmbraViewModel, characterName: String) {
     if (line.role == "user") {
-        SpeechBubble(text = line.text, name = "", umbra = false, color = PlayerBubble, hand = hand, alignEnd = true)
+        SpeechBubble(text = line.text, name = "", umbra = false, color = PlayerBubble, hand = hand, alignEnd = true, portraitId = "", portraitName = characterName, portrait = null, showPortrait = true)
         return
     }
     if (line.beats.isNotEmpty()) {
@@ -1058,6 +1112,10 @@ private fun ChatBubbles(line: ChatLine, hand: FontFamily, present: List<ScenePer
                     color = color,
                     hand = hand,
                     alignEnd = false,
+                    portraitId = if (umbra) "umbra" else beat.speakerId,
+                    portraitName = if (umbra) "Umbra" else beat.speakerName,
+                    portrait = beat.portrait,
+                    showPortrait = true,
                 )
             }
         }
@@ -1077,6 +1135,10 @@ private fun ChatBubbles(line: ChatLine, hand: FontFamily, present: List<ScenePer
         color = color,
         hand = hand,
         alignEnd = false,
+        portraitId = if (umbra) "umbra" else line.speakerId,
+        portraitName = if (umbra) "Umbra" else line.speaker,
+        portrait = line.portrait,
+        showPortrait = !incomplete && line.role != "error",
     )
 }
 
@@ -1088,8 +1150,16 @@ private fun SpeechBubble(
     color: Color,
     hand: FontFamily,
     alignEnd: Boolean,
+    portraitId: String,
+    portraitName: String,
+    portrait: String?,
+    showPortrait: Boolean,
 ) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start, verticalAlignment = Alignment.Top) {
+        if (!alignEnd && showPortrait) {
+            SpeakerPortrait(portraitId, portraitName, portrait, umbra)
+            Box(Modifier.size(8.dp))
+        }
         Column(
             Modifier
                 .widthIn(max = 300.dp)
@@ -1098,20 +1168,13 @@ private fun SpeechBubble(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             if (name.isNotBlank()) {
-                Text(
-                    name,
-                    color = if (umbra) UmbraInk else Color(0xFFE8EAF0),
-                    fontFamily = if (umbra) hand else null,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp,
-                )
+                Text(name, color = if (umbra) UmbraInk else Color(0xFFE8EAF0), fontFamily = if (umbra) hand else null, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
             }
-            Text(
-                text,
-                color = if (umbra) UmbraInk else Color(0xFFE8EAF0),
-                fontFamily = if (umbra) hand else null,
-                fontSize = 15.sp,
-            )
+            Text(text, color = if (umbra) UmbraInk else Color(0xFFE8EAF0), fontFamily = if (umbra) hand else null, fontSize = 15.sp)
+        }
+        if (alignEnd && showPortrait) {
+            Box(Modifier.size(8.dp))
+            SpeakerPortrait(portraitId, portraitName, portrait, umbra)
         }
     }
 }
@@ -1122,10 +1185,7 @@ private fun TypingLine(hand: FontFamily) {
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 900, easing = LinearEasing), repeatMode = RepeatMode.Restart),
         label = "typing-dots",
     )
     val dots = when (phase.toInt().coerceIn(0, 2)) {
@@ -1133,17 +1193,15 @@ private fun TypingLine(hand: FontFamily) {
         1 -> ".."
         else -> "..."
     }
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        SpeakerPortrait("umbra", "Umbra", null, true)
+        Box(Modifier.size(8.dp))
         Text(
             "Umbra is typing$dots",
             color = UmbraInk,
             fontFamily = hand,
             fontSize = 15.sp,
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(UmbraBubble)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.widthIn(max = 300.dp).clip(RoundedCornerShape(16.dp)).background(UmbraBubble).padding(horizontal = 12.dp, vertical = 8.dp),
         )
     }
 }

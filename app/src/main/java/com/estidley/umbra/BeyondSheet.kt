@@ -42,7 +42,6 @@ import org.json.JSONObject
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.random.Random
 
 private val Navy = Color(0xFF0B0D12)
 private val Panel = Color(0xFF171B24)
@@ -176,9 +175,9 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
                         counts = next
                     }, { counts = mapOf(20 to 1); result = null }, { counts = emptyMap(); result = null }, {
                         val active = if (counts.values.sum() == 0) mapOf(20 to 1) else counts
-                        val text = rollDice(active)
-                        result = text
-                        model.flashRoll(text)
+                        val pool = rollPool(active)
+                        result = pool.text
+                        model.showPool(pool)
                     }, { menu = true }, Modifier.weight(1f))
                     SheetPage.Skills -> SkillsPage(facts, model, { menu = true }, Modifier.weight(1f))
                     SheetPage.Actions -> ActionsPage(facts, model, creatureHp, creatureMax, { creatureHp = it }, { creatureMax = it }, { menu = true }, Modifier.weight(1f))
@@ -209,9 +208,9 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
                 onClear = { counts = emptyMap(); result = null },
                 onRoll = {
                     val active = if (counts.values.sum() == 0) mapOf(20 to 1) else counts
-                    val text = rollDice(active)
-                    result = text
-                    model.flashRoll(text)
+                    val pool = rollPool(active)
+                    result = pool.text
+                    model.showPool(pool)
                 },
                 onClose = { dice = false },
             )
@@ -254,7 +253,7 @@ private fun HeaderPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> U
         if (facts.inspiration) Text("Inspiration", color = InkText)
         if (facts.conditions.isNotEmpty()) Text(facts.conditions.joinToString(", "), color = InkText, fontSize = 12.sp)
         AbilityGrid(facts.scores) { label, bonus ->
-            model.flashRoll(label + " " + rollCheck(bonus, "normal"))
+            model.rollNamedCheck(label, bonus)
         }
     }
 }
@@ -275,7 +274,7 @@ private fun SavesPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> Un
                             .clip(RoundedCornerShape(20.dp))
                             .background(Panel)
                             .border(1.dp, Line, RoundedCornerShape(20.dp))
-                            .clickable { model.flashRoll(label + " save " + rollCheck(bonus, "normal")) }
+                            .clickable { model.rollNamedCheck("$label save", bonus) }
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -410,7 +409,7 @@ private fun SkillsPage(facts: SheetFacts, model: UmbraViewModel, onMenu: () -> U
                         .clip(RoundedCornerShape(8.dp))
                         .background(Panel)
                         .border(1.dp, Line, RoundedCornerShape(8.dp))
-                        .clickable { model.flashRoll(label + " " + rollCheck(bonus, "normal")) }
+                        .clickable { model.rollNamedCheck(label, bonus) }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
@@ -442,12 +441,12 @@ private fun ActionsPage(
             Text(
                 signed(hit),
                 color = InkText,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).clickable { model.flashRoll("Attack " + rollCheck(hit, "normal")) }.padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).clickable { model.rollNamedCheck("Attack", hit) }.padding(horizontal = 8.dp, vertical = 4.dp),
             )
             Text(
                 "$damage bludgeoning",
                 color = InkText,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).clickable { model.flashRoll("Damage $damage bludgeoning") }.padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel).clickable { model.showDamage("Damage $damage bludgeoning", damage) }.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
         Text("Actions in Combat", color = InkText, fontWeight = FontWeight.SemiBold)
@@ -1023,20 +1022,6 @@ private fun skillBonus(facts: SheetFacts, key: String, ability: String): Int {
 }
 
 private fun passive(facts: SheetFacts, skill: String, ability: String): Int = 10 + skillBonus(facts, skill, ability)
-
-private fun rollDice(counts: Map<Int, Int>): String {
-    if (counts.values.sum() == 0) return "No dice selected"
-    var total = 0
-    val parts = mutableListOf<String>()
-    for ((sides, count) in counts.toSortedMap()) {
-        if (count <= 0) continue
-        val rolls = List(count) { Random.nextInt(1, sides + 1) }
-        total += rolls.sum()
-        parts += "${count}d$sides ${rolls.joinToString("+")}"
-    }
-    return parts.joinToString("  ") + "   =   $total"
-}
-
 
 private data class TraitBlock(
     val title: String,

@@ -135,3 +135,81 @@ private fun stringSet(array: JSONArray?): Set<String> {
     if (array == null) return emptySet()
     return (0 until array.length()).mapNotNull { array.optString(it).takeIf { value -> value.isNotBlank() } }.toSet()
 }
+
+data class CheckRoll(val dice: List<Int>, val kept: Int, val bonus: Int, val total: Int, val mode: String) {
+    fun caption(name: String): String {
+        val faces = if (dice.size == 1) dice.first().toString() else dice.joinToString("/") + " -> $kept"
+        val sign = if (bonus >= 0) "+$bonus" else bonus.toString()
+        return "$name: $faces $sign = $total"
+    }
+}
+
+fun rollD20Check(bonus: Int, mode: String): CheckRoll {
+    fun die() = Random.nextInt(1, 21)
+    val safe = when (mode) {
+        "advantage", "disadvantage" -> mode
+        else -> "normal"
+    }
+    val rolled = when (safe) {
+        "advantage", "disadvantage" -> listOf(die(), die())
+        else -> listOf(die())
+    }
+    val kept = when (safe) {
+        "advantage" -> rolled.max()
+        "disadvantage" -> rolled.min()
+        else -> rolled.first()
+    }
+    return CheckRoll(rolled, kept, bonus, kept + bonus, safe)
+}
+
+fun shownDiceForCheck(roll: CheckRoll): List<ShownDie> {
+    val duplicates = roll.dice.count { it == roll.kept } > 1
+    return roll.dice.mapIndexed { index, face ->
+        val primary = if (duplicates) face == roll.kept else index == roll.dice.indexOf(roll.kept)
+        ShownDie(sides = 20, value = face, primary = primary)
+    }
+}
+
+data class PoolRoll(val dice: List<ShownDie>, val total: Int, val text: String)
+
+fun rollPool(counts: Map<Int, Int>): PoolRoll {
+    if (counts.values.sum() == 0) return PoolRoll(emptyList(), 0, "No dice selected")
+    val dice = mutableListOf<ShownDie>()
+    var total = 0
+    val parts = mutableListOf<String>()
+    for ((sides, count) in counts.toSortedMap()) {
+        if (count <= 0 || sides < 2) continue
+        val rolls = List(count) { Random.nextInt(1, sides + 1) }
+        total += rolls.sum()
+        parts += "${count}d$sides " + rolls.joinToString("+")
+        for (value in rolls) dice += shownForSides(sides, value)
+    }
+    if (parts.isEmpty()) return PoolRoll(emptyList(), 0, "No dice selected")
+    return PoolRoll(dice, total, parts.joinToString("  ") + "   =   $total")
+}
+
+fun shownForSides(sides: Int, value: Int): List<ShownDie> {
+    if (sides == 100) {
+        val span = (value - 1).coerceIn(0, 99)
+        val tens = (span / 10) * 10
+        val ones = span % 10
+        return listOf(
+            ShownDie(10, tens, if (tens == 0) "00" else tens.toString(), "tens"),
+            ShownDie(10, ones, ones.toString(), "units"),
+        )
+    }
+    val known = setOf(4, 6, 8, 10, 12, 20)
+    val faceSides = if (sides in known) sides else 20
+    val face = if (value in 1..faceSides) value else ((value - 1).mod(faceSides) + 1)
+    return listOf(ShownDie(faceSides, face, value.toString()))
+}
+
+fun rollExpression(roll: CheckRoll): String {
+    val mod = if (roll.bonus >= 0) "+" + roll.bonus else roll.bonus.toString()
+    return "1d20" + mod + "=" + roll.total
+}
+
+fun rollHistoryLine(character: String, check: String, expression: String): String {
+    return character + " rolled " + check + ", " + expression
+}
+

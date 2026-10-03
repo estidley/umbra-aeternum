@@ -5,7 +5,7 @@ import org.json.JSONObject
 
 data class ScenePerson(val id: String, val name: String, val portrait: String?)
 
-data class SpeechBeat(val speakerId: String, val speakerName: String, val text: String)
+data class SpeechBeat(val speakerId: String, val speakerName: String, val text: String, val portrait: String? = null)
 
 data class ParsedTurn(
     val text: String,
@@ -16,6 +16,7 @@ data class ParsedTurn(
     val present: List<ScenePerson>?,
     val proposals: List<Proposal>,
     val beats: List<SpeechBeat> = emptyList(),
+    val speakerPortrait: String? = null,
 )
 
 object SceneJson {
@@ -70,7 +71,7 @@ proposals stays [] unless you propose a sheet or book change. Each proposal is {
         val location = jsonObject(obj, "location") ?: return null
         val speakerId = requiredText(speaker, "id") ?: return null
         val speakerName = requiredText(speaker, "name") ?: return null
-        if (nullableUrlField(speaker, "portrait") == null) return null
+        val speakerPortraitField = nullableUrlField(speaker, "portrait") ?: return null
         val locationName = requiredText(location, "name") ?: return null
         val locationImage = nullableUrlField(location, "image") ?: return null
         if (!obj.has("present") || obj.isNull("present") || obj.opt("present") !is JSONArray) return null
@@ -96,6 +97,7 @@ proposals stays [] unless you propose a sheet or book change. Each proposal is {
             present = present,
             proposals = proposals,
             beats = beats,
+            speakerPortrait = speakerPortraitField.value,
         )
     }
 
@@ -142,9 +144,18 @@ proposals stays [] unless you propose a sheet or book change. Each proposal is {
             val item = array.optJSONObject(i) ?: return null
             if (!item.has("text") || item.isNull("text") || item.opt("text") !is String) return null
             val (id, name) = beatSpeaker(item)
-            out += SpeechBeat(speakerId = id, speakerName = name, text = item.getString("text"))
+            out += SpeechBeat(speakerId = id, speakerName = name, text = item.getString("text"), portrait = beatPortrait(item))
         }
         return out
+    }
+
+    private fun beatPortrait(obj: JSONObject): String? {
+        val speaker = obj.opt("speaker")
+        if (speaker is JSONObject) {
+            val field = nullableUrlField(speaker, "portrait")
+            if (field != null) return field.value
+        }
+        return nullableUrlField(obj, "portrait")?.value
     }
 
     private fun beatSpeaker(obj: JSONObject): Pair<String, String> {
