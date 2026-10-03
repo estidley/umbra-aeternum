@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -733,7 +738,7 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
             if (state.accountScreen == "register") RegisterScreen(state, model) else LoginScreen(state, model)
             return@MaterialTheme
         }
-        Scaffold(containerColor = Ink) { padding ->
+        Scaffold(containerColor = Ink, contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.ime)) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     listOf("chat" to "Chat", "sheet" to "Sheet", "compendium" to "Compendium").forEach { (id, label) ->
@@ -756,7 +761,7 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
 @Composable
 private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
     Column(
-        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        Modifier.fillMaxSize().imePadding().padding(24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Umbra", style = MaterialTheme.typography.displaySmall, color = Gold)
@@ -799,7 +804,7 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
 @Composable
 private fun RegisterScreen(state: UmbraUiState, model: UmbraViewModel) {
     Column(
-        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        Modifier.fillMaxSize().imePadding().padding(24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Umbra", style = MaterialTheme.typography.displaySmall, color = Gold)
