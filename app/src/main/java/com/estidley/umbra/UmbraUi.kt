@@ -1,6 +1,12 @@
 package com.estidley.umbra
 
 import android.app.Application
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -96,6 +102,7 @@ data class ChatLine(val role: String, val text: String, val speaker: String, val
 data class UmbraUiState(
     val connected: Boolean = false,
     val busy: Boolean = false,
+    val awaitingReply: Boolean = false,
     val banner: String = "",
     val baseUrl: String = "",
     val username: String = "",
@@ -497,7 +504,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         val whisper = if (current.audience == "whisper") current.whisperTo else null
         val wire = SceneJson.playerContent(current.audience, whisper, text)
         val history = current.lines + ChatLine("user", text, "You", wire)
-        _state.update { it.copy(lines = history, draft = "", busy = true, banner = "") }
+        _state.update { it.copy(lines = history, draft = "", busy = true, awaitingReply = true, banner = "") }
         viewModelScope.launch {
             val raw = withContext(Dispatchers.IO) {
                 try {
@@ -507,12 +514,12 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             if (!_state.value.connected) {
-                _state.update { it.copy(busy = false) }
+                _state.update { it.copy(busy = false, awaitingReply = false) }
                 return@launch
             }
             if (raw.startsWith("ERROR:")) {
                 _state.update {
-                    it.copy(busy = false, lines = history + ChatLine("error", raw.removePrefix("ERROR:"), "Error", raw))
+                    it.copy(busy = false, awaitingReply = false, lines = history + ChatLine("error", raw.removePrefix("ERROR:"), "Error", raw))
                 }
                 return@launch
             }
@@ -521,6 +528,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     _state.update {
                         it.copy(
                             busy = false,
+                            awaitingReply = false,
                             lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", raw),
                             pending = null,
                         )
@@ -539,6 +547,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     _state.update {
                         it.copy(
                             busy = false,
+                            awaitingReply = false,
                             lines = history + ChatLine("assistant", turn.text, turn.speakerName, raw),
                             present = turn.present ?: emptyList(),
                             locationName = turn.locationName ?: it.locationName,
@@ -901,6 +910,9 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
                     }
                 }
             }
+            if (state.awaitingReply) {
+                item { TypingLine() }
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(state.draft, model::setDraft, label = { Text("Message the table") }, modifier = Modifier.weight(1f))
@@ -911,6 +923,26 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
         TextButton(onClick = { model.redownloadChat() }, enabled = !state.busy) { Text("Redownload chat") }
         TextButton(onClick = { model.disconnect() }) { Text("Sign out") }
     }
+}
+
+@Composable
+private fun TypingLine() {
+    val transition = rememberInfiniteTransition(label = "typing")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "typing-dots",
+    )
+    val dots = when (phase.toInt().coerceIn(0, 2)) {
+        0 -> "."
+        1 -> ".."
+        else -> "..."
+    }
+    Text("Umbra is typing$dots", color = Muted)
 }
 
 @Composable
