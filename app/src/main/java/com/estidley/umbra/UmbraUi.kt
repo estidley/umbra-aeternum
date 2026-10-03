@@ -179,6 +179,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
             loadChatHistory()
+            viewModelScope.launch { pullSheet(clearError = true) }
         }
     }
 
@@ -192,6 +193,9 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     fun setDraft(value: String) = _state.update { it.copy(draft = value) }
     fun selectTab(tab: String) {
         _state.update { it.copy(tab = tab) }
+        if (tab == "sheet" && store.sessionToken().isNotBlank()) {
+            viewModelScope.launch { pullSheet(clearError = true) }
+        }
         if (tab == "compendium" && _state.value.compendiumBooks.isEmpty()) loadCompendiumBooks()
     }
 
@@ -520,6 +524,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 loadChatHistory()
+                viewModelScope.launch { pullSheet(clearError = true) }
             }
         }
     }
@@ -612,7 +617,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun applyAssistant(history: List<ChatLine>, raw: String) {
+    private suspend fun applyAssistant(history: List<ChatLine>, raw: String) {
         if (!_state.value.connected) {
             _state.update { it.copy(busy = false, awaitingReply = false) }
             return
@@ -634,6 +639,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                         rollPrompt = null,
                     )
                 }
+                syncSheetAfterReply(emptyList())
             }
             is AssistantReply.Complete -> {
                 val turn = reply.turn
@@ -663,7 +669,66 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                         sheetTick = it.sheetTick + 1,
                     )
                 }
+                syncSheetAfterReply(turn.proposals)
             }
+        }
+    }
+
+    private suspend fun syncSheetAfterReply(proposals: List<Proposal>) {
+        val patch = JSONObject()
+        for (proposal in proposals) {
+            val part = try {
+                store.sheetPatchFor(proposal)
+            } catch (e: Exception) {
+                null
+            } ?: continue
+            val keys = part.keys().asSequence().toList()
+            for (key in keys) patch.put(key, part.get(key))
+        }
+        var patchFailed = false
+        if (patch.length() > 0) {
+            val before = JSONObject(store.character().toString())
+            val ok = withContext(Dispatchers.IO) {
+                try {
+                    hermes.patchSheet(store.baseUrl(), store.sessionToken(), patch)
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            if (!ok) {
+                patchFailed = true
+                store.writeCharacter(before)
+                _state.update {
+                    it.copy(banner = "Could not apply", character = store.character(), book = store.book(), sheetTick = it.sheetTick + 1)
+                }
+            }
+        }
+        pullSheet(clearError = !patchFailed)
+    }
+
+    private suspend fun pullSheet(clearError: Boolean) {
+        if (store.sessionToken().isBlank() || !_state.value.connected) return
+        val sheet = withContext(Dispatchers.IO) {
+            try {
+                hermes.getSheet(store.baseUrl(), store.sessionToken())
+            } catch (e: Exception) {
+                null
+            }
+        }
+        if (!_state.value.connected) return
+        if (sheet == null) {
+            _state.update { it.copy(banner = "Could not apply") }
+            return
+        }
+        store.applyServerSheet(sheet)
+        _state.update {
+            val banner = when {
+                !clearError -> it.banner
+                it.banner == "Could not apply" -> ""
+                else -> it.banner
+            }
+            it.copy(character = store.character(), book = store.book(), sheetTick = it.sheetTick + 1, banner = banner)
         }
     }
 

@@ -1190,6 +1190,8 @@ private fun readFacts(character: JSONObject?, book: JSONObject?): SheetFacts {
     val speciesEntity = findEntity(book, "species", speciesId)
     val className = classEntity?.optString("name").orEmpty().ifBlank { classId.ifBlank { "Class" } }
     val speciesName = speciesEntity?.optString("name").orEmpty().ifBlank { speciesId.ifBlank { "Species" } }
+    val subclassId = first.optString("subclassId")
+    val subclassName = findEntity(book, "subclasses", subclassId)?.optString("name").orEmpty().ifBlank { subclassId }
     val hp = document.optJSONObject("hp") ?: JSONObject()
     val current = if (hp.has("current")) hp.optInt("current") else 0
     val max = when {
@@ -1217,7 +1219,7 @@ private fun readFacts(character: JSONObject?, book: JSONObject?): SheetFacts {
     val spellAbility = classEntity?.optJSONObject("spellcasting")?.optString("ability").orEmpty().ifBlank { "int" }
     return SheetFacts(
         name = doc.optString("name").ifBlank { "Adventurer" },
-        subtitle = "$speciesName $className $level",
+        subtitle = listOf(speciesName, className, subclassName, level.toString()).filter { it.isNotBlank() }.joinToString(" "),
         scores = scores,
         level = level,
         prof = profBonus(level),

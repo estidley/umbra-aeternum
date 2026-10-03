@@ -254,6 +254,102 @@ class LocalStore(private val context: Context) {
         return "Updated the character sheet"
     }
 
+    fun sheetPatchFor(proposal: Proposal): JSONObject? {
+        val data = proposal.data
+        val patch = JSONObject()
+        when (proposal.target) {
+            "species" -> if (proposal.kind != "book") {
+                val species = data.optString("speciesId", data.optString("id")).trim()
+                if (species.isNotBlank()) patch.put("species", species)
+            }
+            "subclass" -> if (proposal.kind != "book") {
+                val subclass = data.optString("subclassId", data.optString("id")).trim()
+                if (subclass.isNotBlank()) patch.put("subclass", subclass)
+            }
+            "sheet" -> {
+                val name = data.optString("name").trim()
+                if (data.has("name") && name.isNotBlank()) patch.put("character_name", name.take(120))
+                val species = data.optString("speciesId").trim()
+                if (data.has("speciesId") && species.isNotBlank()) patch.put("species", species)
+                optionalInt(data, "ac")?.let { patch.put("ac", it) }
+                val hp = data.optJSONObject("hp")
+                if (hp != null) {
+                    optionalInt(hp, "current")?.let { patch.put("hp", it) }
+                    val max = optionalInt(hp, "rolledMax") ?: optionalInt(hp, "max")
+                    if (max != null) patch.put("max_hp", max)
+                }
+                val classes = data.optJSONArray("classes")
+                if (classes != null && classes.length() > 0) {
+                    val row = classes.optJSONObject(0)
+                    if (row != null) {
+                        val className = row.optString("classId").trim()
+                        if (row.has("classId") && className.isNotBlank()) patch.put("class", className)
+                        val subclass = row.optString("subclassId").trim()
+                        if (row.has("subclassId") && subclass.isNotBlank()) patch.put("subclass", subclass)
+                        optionalInt(row, "level")?.let { patch.put("level", it) }
+                    }
+                }
+            }
+        }
+        return if (patch.length() == 0) null else patch
+    }
+
+    fun applyServerSheet(sheet: JSONObject) {
+        val doc = character()
+        val document = doc.optJSONObject("document") ?: JSONObject()
+        optionalText(sheet, "character_name")?.let { doc.put("name", it.take(120)) }
+        optionalText(sheet, "species")?.let { document.put("speciesId", it) }
+        optionalInt(sheet, "ac")?.let { document.put("ac", it) }
+        val hp = document.optJSONObject("hp") ?: JSONObject()
+        var hpChanged = false
+        optionalInt(sheet, "hp")?.let {
+            hp.put("current", it)
+            hpChanged = true
+        }
+        optionalInt(sheet, "max_hp")?.let {
+            hp.put("rolledMax", it)
+            hpChanged = true
+        }
+        if (hpChanged) document.put("hp", hp)
+        val classes = document.optJSONArray("classes") ?: JSONArray()
+        val row = if (classes.length() == 0) JSONObject().put("hitDiceSpent", 0) else classes.getJSONObject(0)
+        var classChanged = classes.length() == 0
+        optionalText(sheet, "class")?.let {
+            row.put("classId", it)
+            classChanged = true
+        }
+        optionalText(sheet, "subclass")?.let {
+            row.put("subclassId", it)
+            classChanged = true
+        }
+        optionalInt(sheet, "level")?.let {
+            row.put("level", it)
+            classChanged = true
+        }
+        if (classChanged) {
+            if (classes.length() == 0) classes.put(row)
+            document.put("classes", classes)
+        }
+        doc.put("document", document)
+        writeCharacter(doc)
+    }
+
+    private fun optionalText(obj: JSONObject, key: String): String? {
+        if (!obj.has(key) || obj.isNull(key)) return null
+        val value = obj.opt(key)
+        if (value !is String) return null
+        return value.trim().ifBlank { null }
+    }
+
+    private fun optionalInt(obj: JSONObject, key: String): Int? {
+        if (!obj.has(key) || obj.isNull(key)) return null
+        return when (val value = obj.opt(key)) {
+            is Number -> value.toInt()
+            is String -> value.trim().toIntOrNull()
+            else -> null
+        }
+    }
+
     private fun seedBook(): JSONObject {
         val species = entities("species.json").filterKind("species", "subspecies")
         val classes = entities("classes.json").filterKind("class")

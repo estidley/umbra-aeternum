@@ -137,6 +137,28 @@ class HermesClient {
         return assistantText(raw)
     }
 
+    fun getSheet(baseUrl: String, sessionToken: String): JSONObject {
+        val root = authorizedGet(baseUrl, "/api/chat/sheet", sessionToken)
+        return root.optJSONObject("sheet") ?: throw HermesException("Response was not JSON")
+    }
+
+    fun patchSheet(baseUrl: String, sessionToken: String, sheet: JSONObject): JSONObject {
+        if (sessionToken.isBlank()) throw HermesException("The session is missing.")
+        val body = JSONObject().put("sheet", sheet)
+        val request = Request.Builder()
+            .url(normalizeBase(baseUrl) + "/api/chat/sheet")
+            .header("Authorization", "Bearer $sessionToken")
+            .header("Content-Type", "application/json")
+            .patch(body.toString().toRequestBody(JSON))
+            .build()
+        val root = try {
+            JSONObject(execute(http, request))
+        } catch (e: HermesException) {
+            throw e
+        }
+        return root.optJSONObject("sheet") ?: sheet
+    }
+
     fun chatHistory(baseUrl: String, sessionToken: String): List<ChatHistoryMessage> {
         val all = mutableListOf<ChatHistoryMessage>()
         var offset = 0
