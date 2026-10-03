@@ -32,21 +32,36 @@ class HermesClient {
             http.newCall(request).execute().use { response ->
                 val text = response.body.string()
                 if (response.code == 200) {
-                    val root = try {
-                        JSONObject(text)
-                    } catch (e: Exception) {
-                        throw HermesException("HTTP 200\nResponse was not JSON")
-                    }
-                    val key = if (root.has("api_key") && !root.isNull("api_key")) root.optString("api_key") else ""
-                    if (key.isBlank()) throw HermesException("HTTP 200\nMissing api_key")
-                    return key
+                    return sessionTokenFrom(text)
                 }
                 throw HermesException("HTTP ${response.code}\n${errorSnippet(text)}")
             }
         } catch (e: HermesException) {
             throw e
         } catch (e: Exception) {
-            throw HermesException("Network error: ${e.message ?: e.javaClass.simpleName}")
+            throw HermesException("Network error: ${e.javaClass.simpleName}")
+        }
+    }
+
+    fun logout(baseUrl: String, sessionToken: String): LogoutResult {
+        if (sessionToken.isBlank()) return LogoutResult.Unauthorized
+        val url = normalizeBase(baseUrl) + "/api/logout"
+        val request = Request.Builder()
+            .url(url)
+            .header("Authorization", "Bearer $sessionToken")
+            .post(ByteArray(0).toRequestBody(null))
+            .build()
+        try {
+            http.newCall(request).execute().use { response ->
+                val text = response.body.string()
+                return when (response.code) {
+                    in 200..299 -> LogoutResult.Success
+                    401 -> LogoutResult.Unauthorized
+                    else -> LogoutResult.Failed("HTTP ${response.code}\n${errorSnippet(text)}")
+                }
+            }
+        } catch (e: Exception) {
+            return LogoutResult.Failed("Network error: ${e.javaClass.simpleName}")
         }
     }
 
@@ -56,7 +71,7 @@ class HermesClient {
         return execute(request)
     }
 
-    fun chat(baseUrl: String, bearer: String, messages: JSONArray): String {
+    fun chat(baseUrl: String, sessionToken: String, messages: JSONArray): String {
         val url = normalizeBase(baseUrl) + "/v1/chat/completions"
         val body = JSONObject()
             .put("model", "hermes")
@@ -65,7 +80,7 @@ class HermesClient {
             .url(url)
             .header("Content-Type", "application/json")
             .post(body.toString().toRequestBody(JSON))
-        if (bearer.isNotBlank()) builder.header("Authorization", "Bearer $bearer")
+        if (sessionToken.isNotBlank()) builder.header("Authorization", "Bearer $sessionToken")
         val request = builder.build()
         val raw = execute(request)
         return assistantText(raw)
@@ -83,7 +98,7 @@ class HermesClient {
         } catch (e: HermesException) {
             throw e
         } catch (e: Exception) {
-            throw HermesException("Network error: ${e.message ?: e.javaClass.simpleName}")
+            throw HermesException("Network error: ${e.javaClass.simpleName}")
         }
     }
 
@@ -91,14 +106,28 @@ class HermesClient {
         private val JSON = "application/json; charset=utf-8".toMediaType()
 
 
+        private fun sessionTokenFrom(text: String): String {
+            val root = try {
+                JSONObject(text)
+            } catch (e: Exception) {
+                throw HermesException("HTTP 200\nResponse was not JSON")
+            }
+            val token = if (root.has("session_token") && !root.isNull("session_token")) {
+                root.optString("session_token")
+            } else {
+                ""
+            }
+            if (token.isBlank()) throw HermesException("HTTP 200\nMissing session_token")
+            return token
+        }
+
         private fun errorSnippet(text: String): String {
-            val fallback = text.take(400)
             return try {
                 val root = JSONObject(text)
                 val error = if (root.has("error") && !root.isNull("error")) root.optString("error") else ""
-                if (error.isNotBlank()) error else fallback
+                if (error.isNotBlank()) error else "Request failed"
             } catch (e: Exception) {
-                fallback
+                "Request failed"
             }
         }
 
@@ -147,3 +176,9 @@ class HermesClient {
 }
 
 class HermesException(message: String) : Exception(message)
+
+sealed class LogoutResult {
+    data object Success : LogoutResult()
+    data object Unauthorized : LogoutResult()
+    data class Failed(val message: String) : LogoutResult()
+}

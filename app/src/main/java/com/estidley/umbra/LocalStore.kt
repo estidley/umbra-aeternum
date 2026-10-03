@@ -24,6 +24,10 @@ class LocalStore(private val context: Context) {
     private val characterFile = File(context.filesDir, "character.json")
     private val bookFile = File(context.filesDir, "book.json")
 
+    init {
+        purgeLegacyMasterKey()
+    }
+
     fun displayName(): String = profile.getString("display_name", "").orEmpty()
 
     fun setDisplayName(name: String) {
@@ -44,21 +48,43 @@ class LocalStore(private val context: Context) {
         return saved
     }
 
-    fun bearer(): String = secrets.getString("bearer", "").orEmpty()
+    fun sessionToken(): String = secrets.getString("session_token", "").orEmpty()
 
     fun saveBaseUrl(baseUrl: String) {
         secrets.edit()
             .putString("base_url", HermesClient.normalizeBase(baseUrl))
             .remove("api_key")
+            .remove("API_SERVER_KEY")
+            .remove("bearer")
             .apply()
     }
 
-    fun saveBearer(token: String) {
-        secrets.edit().putString("bearer", token.trim()).remove("api_key").apply()
+    fun saveSession(sessionToken: String) {
+        val token = sessionToken.trim()
+        if (token.isEmpty()) throw IllegalArgumentException("Missing session_token")
+        secrets.edit()
+            .putString("session_token", token)
+            .remove("api_key")
+            .remove("API_SERVER_KEY")
+            .remove("bearer")
+            .apply()
     }
 
-    fun dropApiKey() {
-        if (secrets.contains("api_key")) secrets.edit().remove("api_key").apply()
+    fun clearSession() {
+        secrets.edit()
+            .remove("session_token")
+            .remove("api_key")
+            .remove("API_SERVER_KEY")
+            .remove("bearer")
+            .apply()
+    }
+
+    private fun purgeLegacyMasterKey() {
+        secrets.edit()
+            .remove("api_key")
+            .remove("API_SERVER_KEY")
+            .remove("bearer")
+            .apply()
     }
 
     fun character(): JSONObject {

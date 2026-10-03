@@ -114,6 +114,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     private val store = LocalStore(app)
     private val hermes = HermesClient()
     private val queue = ArrayDeque<Proposal>()
+    private var signingOut = false
     private val _state = MutableStateFlow(
         UmbraUiState(baseUrl = store.baseUrl()),
     )
@@ -138,8 +139,35 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun disconnect() {
-        queue.clear()
-        _state.update { it.copy(connected = false, pending = null, banner = "") }
+        if (signingOut) return
+        signingOut = true
+        val token = store.sessionToken()
+        val base = store.baseUrl()
+        viewModelScope.launch {
+            _state.update { it.copy(busy = true, banner = "") }
+            val result = withContext(Dispatchers.IO) {
+                hermes.logout(base, token)
+            }
+            signingOut = false
+            when (result) {
+                LogoutResult.Success, LogoutResult.Unauthorized -> {
+                    store.clearSession()
+                    queue.clear()
+                    _state.update {
+                        it.copy(
+                            busy = false,
+                            connected = false,
+                            pending = null,
+                            banner = "",
+                            password = "",
+                        )
+                    }
+                }
+                is LogoutResult.Failed -> {
+                    _state.update { it.copy(busy = false, banner = result.message) }
+                }
+            }
+        }
     }
 
     fun checkConnection() {
@@ -163,9 +191,16 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
             val key = outcome.first
             val error = outcome.second
             if (key.isNullOrBlank()) {
-                _state.update { it.copy(busy = false, connected = false, banner = error ?: "HTTP 200\nMissing api_key") }
+                _state.update {
+                    it.copy(
+                        busy = false,
+                        connected = false,
+                        password = "",
+                        banner = error ?: "HTTP 200\nMissing session_token",
+                    )
+                }
             } else {
-                store.saveBearer(key)
+                store.saveSession(key)
                 if (!getApplication<Application>().filesDir.resolve("character.json").exists()) {
                     store.writeCharacter(LocalStore.emptyCharacter("Adventurer"))
                 }
@@ -202,10 +237,14 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val raw = withContext(Dispatchers.IO) {
                 try {
-                    hermes.chat(store.baseUrl(), store.bearer(), messages(history))
+                    hermes.chat(store.baseUrl(), store.sessionToken(), messages(history))
                 } catch (e: Exception) {
                     "ERROR:" + (e.message ?: "Chat failed")
                 }
+            }
+            if (!_state.value.connected) {
+                _state.update { it.copy(busy = false) }
+                return@launch
             }
             if (raw.startsWith("ERROR:")) {
                 _state.update {
@@ -507,7 +546,7 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
             colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12)),
         ) { Text(if (state.busy) "Signing in..." else "Log in") }
         if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFE8EAF0))
-        Text("POST /api/login. The key stays on this device. Username and password are not saved.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        Text("POST /api/login. The session stays on this device. Username and password are not saved.", color = Faint, style = MaterialTheme.typography.bodySmall)
         Text("Image generation and Google API: not connected yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
     }
 }
@@ -573,7 +612,7 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
                 Text(if (state.busy) "…" else "Send")
             }
         }
-        TextButton(onClick = { model.disconnect() }) { Text("Connection") }
+        TextButton(onClick = { model.disconnect() }) { Text("Sign out") }
     }
 }
 
