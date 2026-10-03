@@ -18,7 +18,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -76,6 +78,7 @@ private data class SheetFacts(
     val background: String,
     val notes: String,
     val otherProf: List<String>,
+    val slotsSpent: Map<String, Int>,
 )
 
 private val SkillRows = listOf(
@@ -161,7 +164,7 @@ fun BeyondSheet(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) 
                 }
             }
         }
-        if (!menu && page == SheetPage.Main) {
+        if (!menu && (page == SheetPage.Main || page == SheetPage.Spells)) {
             Box(
                 Modifier.align(Alignment.BottomEnd).padding(16.dp).size(56.dp).clip(CircleShape).background(DiceRed).clickable { dice = true },
                 contentAlignment = Alignment.Center,
@@ -454,33 +457,178 @@ private fun InventoryPage(facts: SheetFacts, mine: Boolean, onMine: (Boolean) ->
 
 @Composable
 private fun SpellsPage(facts: SheetFacts, query: String, onQuery: (String) -> Unit, onMenu: () -> Unit, modifier: Modifier) {
+    var chip by remember { mutableStateOf("all") }
     val mod = abilityMod(facts.scores[facts.spellAbility] ?: 10)
     val attack = mod + facts.prof
     val dc = 8 + facts.prof + mod
-    val shown = (0 until facts.spells.length()).mapNotNull { facts.spells.optJSONObject(it) }.filter {
-        val id = it.optString("spellId")
-        query.isBlank() || id.contains(query, ignoreCase = true)
+    val spells = (0 until facts.spells.length()).mapNotNull { facts.spells.optJSONObject(it) }
+    val shown = spells.filter { spell ->
+        val id = spell.optString("spellId")
+        val source = spell.optString("source")
+        val matchesQuery = query.isBlank() || id.contains(query, ignoreCase = true) || source.contains(query, ignoreCase = true)
+        val level = if (spell.has("level")) spell.optInt("level") else null
+        val matchesChip = when (chip) {
+            "0" -> level == 0
+            "1" -> level == 1
+            else -> true
+        }
+        matchesQuery && matchesChip
     }
-    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionBar("Spells", onMenu)
-        androidx.compose.material3.OutlinedTextField(query, onQuery, label = { Text("Search") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("All", "0", "1", "2", "3").forEach { chip ->
-                Text(chip, color = InkText, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(if (chip == "All") Color(0xFF3D7DFF) else Panel).padding(horizontal = 8.dp, vertical = 4.dp))
+    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Spells",
+                color = InkText,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel).padding(horizontal = 12.dp, vertical = 12.dp),
+            )
+            Text(
+                "::::",
+                color = DiceRed,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Panel).padding(horizontal = 10.dp, vertical = 12.dp),
+            )
+            Text(
+                "\u2630",
+                color = InkText,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Panel).clickable { onMenu() }.padding(horizontal = 12.dp, vertical = 12.dp),
+            )
+        }
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF1B202B)).border(1.dp, Line, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicTextField(
+                value = query,
+                onValueChange = onQuery,
+                singleLine = true,
+                textStyle = TextStyle(color = InkText, fontSize = 14.sp),
+                modifier = Modifier.weight(1f),
+                decorationBox = { inner ->
+                    if (query.isEmpty()) Text("Search in Spells", color = Ash, fontSize = 14.sp)
+                    inner()
+                },
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("all" to "All", "0" to "-  0  -", "1" to "1st").forEach { (id, label) ->
+                val selected = chip == id
+                Text(
+                    label,
+                    color = if (selected) Color.White else InkText,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (selected) Color(0xFF1F6FEB) else Color(0xFF2C3340))
+                        .clickable { chip = id }
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                )
             }
         }
-        Text("MOD ${facts.spellAbility.uppercase()}    SPELL ATTACK ${signed(attack)}    SAVE DC $dc", color = InkText, fontSize = 11.sp)
-        Text("SPELLS", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-        Text("TIME    RANGE                 HIT/DC    EFFECT", color = Ash, fontSize = 10.sp)
-        if (shown.isEmpty()) Text("No spells are stored.", color = Ash)
-        shown.forEach { spell ->
-            Text(spell.optString("spellId"), color = InkText, fontWeight = FontWeight.SemiBold)
-            val prepared = if (spell.optBoolean("prepared")) "prepared" else "known"
-            Text("—    —    ${signed(attack)}    $prepared", color = Color(0xFFC5CDD8), fontSize = 12.sp)
+        Row(Modifier.fillMaxWidth()) {
+            SpellStat(signed(mod), "MODIFIER", Modifier.weight(1f))
+            SpellStat(signed(attack), "SPELL ATTACK", Modifier.weight(1f))
+            SpellStat(dc.toString(), "SAVE DC", Modifier.weight(1f))
         }
-        Text("SPELL SLOTS", color = Blue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-        Text("Slot totals are not stored. Spent slots stay empty until the document has them.", color = Ash, fontSize = 12.sp)
+        if (shown.isEmpty()) {
+            Text(
+                when {
+                    query.isNotBlank() -> "No spells match."
+                    chip == "all" -> "No spells are stored."
+                    else -> "No spells at this level are stored."
+                },
+                color = Ash,
+                fontSize = 13.sp,
+            )
+        } else {
+            shown.groupBy { if (it.has("level")) it.optInt("level") else -1 }.toSortedMap().forEach { (level, rows) ->
+                SpellLevelHeader(
+                    title = spellLevelTitle(level),
+                    spent = if (level == 1) facts.slotsSpent["1"] else null,
+                    showSlots = level == 1,
+                )
+                SpellColumns()
+                rows.forEach { SpellEntry(it) }
+            }
+        }
+        val showedFirst = shown.any { it.has("level") && it.optInt("level") == 1 }
+        if ((chip == "all" || chip == "1") && !showedFirst) {
+            SpellLevelHeader("1st Level", spent = facts.slotsSpent["1"], showSlots = true)
+        }
     }
+}
+
+@Composable
+private fun SpellStat(value: String, label: String, modifier: Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 24.sp)
+        Text(label, color = Ash, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun SpellColumns() {
+    Row(Modifier.fillMaxWidth()) {
+        Text("TIME", color = Ash, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(0.22f))
+        Text("RANGE", color = Ash, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(0.22f))
+        Text("HIT/DC", color = Ash, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(0.28f))
+        Text("EFFECT", color = Ash, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(0.28f))
+    }
+}
+
+@Composable
+private fun SpellEntry(spell: JSONObject) {
+    val source = spell.optString("source")
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(spellLabel(spell.optString("spellId")), color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            if (source.isNotBlank()) {
+                Text(source.uppercase(), color = Ash, fontSize = 10.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 8.dp)) {
+            Text("\u2014", color = InkText, fontSize = 13.sp, modifier = Modifier.weight(0.22f))
+            Text("\u2014", color = InkText, fontSize = 13.sp, modifier = Modifier.weight(0.22f))
+            Text("\u2014", color = InkText, fontSize = 13.sp, modifier = Modifier.weight(0.28f))
+            Text("\u2014", color = InkText, fontSize = 13.sp, modifier = Modifier.weight(0.28f))
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
+    }
+}
+
+@Composable
+private fun SpellLevelHeader(title: String, spent: Int?, showSlots: Boolean) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = InkText, fontWeight = FontWeight.SemiBold, fontSize = 22.sp)
+        if (showSlots) {
+            Text(
+                if (spent == null) "SLOTS  Not stored" else "SLOTS  Spent $spent",
+                color = Ash,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+private fun spellLevelTitle(level: Int): String = when (level) {
+    -1 -> "Spells"
+    0 -> "Cantrip"
+    1 -> "1st Level"
+    2 -> "2nd Level"
+    3 -> "3rd Level"
+    else -> "${level}th Level"
+}
+
+private fun spellLabel(id: String): String {
+    val tail = id.substringAfterLast('.').substringAfterLast(':').ifBlank { id }
+    return tail.replace('-', ' ').replace('_', ' ').replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
 
 @Composable
@@ -663,12 +811,25 @@ private fun readFacts(character: JSONObject?, book: JSONObject?): SheetFacts {
         items = document.optJSONArray("items") ?: JSONArray(),
         currencyLabel = coins,
         spells = document.optJSONArray("spells") ?: JSONArray(),
+        slotsSpent = readSlots(document.optJSONObject("slotsSpent")),
         spellAbility = spellAbility,
         feats = jsonList(document.optJSONArray("featIds")),
         background = document.optString("backgroundId").ifBlank { details.optString("background") },
         notes = notes,
         otherProf = jsonList(document.optJSONArray("otherProficiencies")),
     )
+}
+
+
+private fun readSlots(obj: JSONObject?): Map<String, Int> {
+    if (obj == null) return emptyMap()
+    val out = mutableMapOf<String, Int>()
+    val keys = obj.keys()
+    while (keys.hasNext()) {
+        val key = keys.next()
+        out[key] = obj.optInt(key, 0)
+    }
+    return out
 }
 
 private fun findEntity(book: JSONObject?, bucket: String, id: String): JSONObject? {
