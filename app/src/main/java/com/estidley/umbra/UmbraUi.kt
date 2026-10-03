@@ -94,6 +94,7 @@ data class UmbraUiState(
     val baseUrl: String = "",
     val username: String = "",
     val password: String = "",
+    val accountScreen: String = "login",
     val tab: String = "chat",
     val audience: String = "group",
     val whisperTo: ScenePerson? = null,
@@ -123,6 +124,10 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     fun setBaseUrl(value: String) = _state.update { it.copy(baseUrl = value) }
     fun setUsername(value: String) = _state.update { it.copy(username = value) }
     fun setPassword(value: String) = _state.update { it.copy(password = value) }
+
+    fun showRegister() = _state.update { it.copy(accountScreen = "register", banner = "", password = "") }
+
+    fun showLogin() = _state.update { it.copy(accountScreen = "login", banner = "", password = "") }
     fun setDraft(value: String) = _state.update { it.copy(draft = value) }
     fun selectTab(tab: String) = _state.update { it.copy(tab = tab) }
     fun setQuery(value: String) = _state.update { it.copy(compendiumQuery = value, compendiumId = "") }
@@ -170,8 +175,23 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun checkConnection() {
+    fun checkConnection() = submitAccount(registering = false)
+
+    fun registerAccount() = submitAccount(registering = true)
+
+    private fun submitAccount(registering: Boolean) {
         val current = _state.value
+        if (current.username.isBlank() || current.password.isBlank()) {
+            _state.update {
+                it.copy(
+                    busy = false,
+                    connected = false,
+                    password = "",
+                    banner = "Username and password are required.",
+                )
+            }
+            return
+        }
         val legacy = "https://hermes-agent-production-76d3.up.railway.app"
         val base = if (HermesClient.normalizeBase(current.baseUrl) == legacy) {
             BuildConfig.HERMES_BASE_URL
@@ -183,14 +203,19 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(busy = true, banner = "", baseUrl = store.baseUrl()) }
             val outcome = withContext(Dispatchers.IO) {
                 try {
-                    hermes.login(store.baseUrl(), current.username, current.password) to null
+                    val token = if (registering) {
+                        hermes.register(store.baseUrl(), current.username, current.password)
+                    } else {
+                        hermes.login(store.baseUrl(), current.username, current.password)
+                    }
+                    token to null
                 } catch (e: Exception) {
-                    null to (e.message ?: "Login failed")
+                    null to (e.message ?: if (registering) "Register failed" else "Login failed")
                 }
             }
-            val key = outcome.first
+            val token = outcome.first
             val error = outcome.second
-            if (key.isNullOrBlank()) {
+            if (token.isNullOrBlank()) {
                 _state.update {
                     it.copy(
                         busy = false,
@@ -200,7 +225,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
             } else {
-                store.saveSession(key)
+                store.saveSession(token)
                 if (!getApplication<Application>().filesDir.resolve("character.json").exists()) {
                     store.writeCharacter(LocalStore.emptyCharacter("Adventurer"))
                 }
@@ -208,6 +233,7 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                     it.copy(
                         busy = false,
                         connected = true,
+                        accountScreen = "login",
                         banner = "",
                         username = "",
                         password = "",
@@ -486,7 +512,7 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
             )
         }
         if (!state.connected) {
-            LoginScreen(state, model)
+            if (state.accountScreen == "register") RegisterScreen(state, model) else LoginScreen(state, model)
             return@MaterialTheme
         }
         Scaffold(containerColor = Ink) { padding ->
@@ -547,7 +573,50 @@ private fun LoginScreen(state: UmbraUiState, model: UmbraViewModel) {
         ) { Text(if (state.busy) "Signing in..." else "Log in") }
         if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFE8EAF0))
         Text("POST /api/login. The session stays on this device. Username and password are not saved.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = { model.showRegister() }, enabled = !state.busy) { Text("Create an account") }
         Text("Image generation and Google API: not connected yet.", color = Faint, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun RegisterScreen(state: UmbraUiState, model: UmbraViewModel) {
+    Column(
+        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("Umbra", style = MaterialTheme.typography.displaySmall, color = Gold)
+        Text("First account only.", color = Muted)
+        OutlinedTextField(
+            state.baseUrl,
+            model::setBaseUrl,
+            label = { Text("Base URL") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            state.username,
+            model::setUsername,
+            label = { Text("Username") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            state.password,
+            model::setPassword,
+            label = { Text("Password") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+        )
+        Button(
+            onClick = { model.registerAccount() },
+            enabled = !state.busy,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color(0xFF0B0D12)),
+        ) { Text(if (state.busy) "Creating account..." else "Create account") }
+        if (state.banner.isNotBlank()) Text(state.banner, color = Color(0xFFE8EAF0))
+        Text("POST /api/register. The session stays on this device. Username and password are not saved.", color = Faint, style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = { model.showLogin() }, enabled = !state.busy) { Text("Back to sign in") }
     }
 }
 

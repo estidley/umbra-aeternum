@@ -32,7 +32,35 @@ class HermesClient {
             http.newCall(request).execute().use { response ->
                 val text = response.body.string()
                 if (response.code == 200) {
-                    return sessionTokenFrom(text)
+                    return sessionTokenFrom(text, 200)
+                }
+                throw HermesException("HTTP ${response.code}\n${errorSnippet(text)}")
+            }
+        } catch (e: HermesException) {
+            throw e
+        } catch (e: Exception) {
+            throw HermesException("Network error: ${e.javaClass.simpleName}")
+        }
+    }
+
+    fun register(baseUrl: String, username: String, password: String): String {
+        val url = normalizeBase(baseUrl) + "/api/register"
+        val body = JSONObject()
+            .put("username", username)
+            .put("password", password)
+        val request = Request.Builder()
+            .url(url)
+            .header("Content-Type", "application/json")
+            .post(body.toString().toRequestBody(JSON))
+            .build()
+        try {
+            http.newCall(request).execute().use { response ->
+                val text = response.body.string()
+                if (response.code == 201) {
+                    return sessionTokenFrom(text, 201)
+                }
+                if (registrationClosed(response.code, text)) {
+                    throw HermesException("Signup is closed.")
                 }
                 throw HermesException("HTTP ${response.code}\n${errorSnippet(text)}")
             }
@@ -106,19 +134,32 @@ class HermesClient {
         private val JSON = "application/json; charset=utf-8".toMediaType()
 
 
-        private fun sessionTokenFrom(text: String): String {
+        private fun sessionTokenFrom(text: String, status: Int): String {
             val root = try {
                 JSONObject(text)
             } catch (e: Exception) {
-                throw HermesException("HTTP 200\nResponse was not JSON")
+                throw HermesException("HTTP $status\nResponse was not JSON")
             }
             val token = if (root.has("session_token") && !root.isNull("session_token")) {
                 root.optString("session_token")
             } else {
                 ""
             }
-            if (token.isBlank()) throw HermesException("HTTP 200\nMissing session_token")
+            if (token.isBlank()) throw HermesException("HTTP $status\nMissing session_token")
             return token
+        }
+
+        private fun registrationClosed(status: Int, text: String): Boolean {
+            if (status == 400) return false
+            val error = errorSnippet(text).lowercase()
+            val saysClosed = error.contains("signup closed") ||
+                error.contains("signup is closed") ||
+                error.contains("registration closed") ||
+                error.contains("registration is closed")
+            if (saysClosed) return true
+            // umbra-login handleRegister: the only non-validation rejection that means
+            // signup is no longer open is 403 {"error":"Signup closed"}.
+            return status == 403
         }
 
         private fun errorSnippet(text: String): String {
