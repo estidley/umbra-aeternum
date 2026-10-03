@@ -1,5 +1,6 @@
 package com.estidley.umbra
 
+import android.net.Uri
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -114,6 +115,89 @@ class HermesClient {
         return assistantText(raw)
     }
 
+    fun compendiumBooks(baseUrl: String, sessionToken: String): List<CompendiumBook> {
+        val root = authorizedGet(baseUrl, "/api/compendium/books?dedupe=true", sessionToken)
+        val books = root.optJSONArray("books") ?: JSONArray()
+        val out = mutableListOf<CompendiumBook>()
+        for (i in 0 until books.length()) {
+            val obj = books.optJSONObject(i) ?: continue
+            out += CompendiumBook(
+                id = obj.optString("id"),
+                key = obj.optString("key"),
+                name = obj.optString("name"),
+                edition = obj.optString("edition"),
+                entityCount = obj.optInt("entity_count", 0),
+            )
+        }
+        return out
+    }
+
+    fun compendiumKinds(baseUrl: String, sessionToken: String, idOrKey: String): List<CompendiumKind> {
+        val root = authorizedGet(baseUrl, "/api/compendium/books/${enc(idOrKey)}", sessionToken)
+        val kinds = root.optJSONArray("kinds") ?: JSONArray()
+        val out = mutableListOf<CompendiumKind>()
+        for (i in 0 until kinds.length()) {
+            val obj = kinds.optJSONObject(i) ?: continue
+            val kind = obj.optString("kind")
+            if (kind.isBlank()) continue
+            out += CompendiumKind(kind = kind, count = obj.optInt("count", 0))
+        }
+        return out
+    }
+
+    fun compendiumEntities(
+        baseUrl: String,
+        sessionToken: String,
+        idOrKey: String,
+        kind: String,
+        query: String,
+        offset: Int,
+    ): CompendiumPage {
+        val path = "/api/compendium/books/${enc(idOrKey)}/entities?kind=${enc(kind)}&q=${enc(query)}&limit=200&offset=$offset&include_data=true"
+        val root = authorizedGet(baseUrl, path, sessionToken)
+        val entities = root.optJSONArray("entities") ?: JSONArray()
+        val hits = mutableListOf<CompendiumHit>()
+        for (i in 0 until entities.length()) {
+            val obj = entities.optJSONObject(i) ?: continue
+            hits += CompendiumHit(id = obj.optString("id"), kind = obj.optString("kind"), name = obj.optString("name"))
+        }
+        val returned = if (root.has("returned")) root.optInt("returned") else hits.size
+        return CompendiumPage(entities = hits, returned = returned, hasMore = root.optBoolean("has_more", false))
+    }
+
+    fun compendiumDetail(baseUrl: String, sessionToken: String, entityId: String): String {
+        val root = authorizedGet(baseUrl, "/api/compendium/entities/${enc(entityId)}", sessionToken)
+        val entity = root.optJSONObject("entity") ?: return "No description stored."
+        return visibleDescription(entity.optJSONObject("data"))
+    }
+
+    private fun authorizedGet(baseUrl: String, pathAndQuery: String, sessionToken: String): JSONObject {
+        if (sessionToken.isBlank()) throw HermesException("The session is missing.")
+        val request = Request.Builder()
+            .url(normalizeBase(baseUrl) + pathAndQuery)
+            .header("Authorization", "Bearer $sessionToken")
+            .get()
+            .build()
+        try {
+            http.newCall(request).execute().use { response ->
+                val text = response.body.string()
+                if (response.code == 401) throw HermesException("HTTP 401")
+                if (!response.isSuccessful) throw HermesException("HTTP ${response.code}\n${errorSnippet(text)}")
+                return try {
+                    JSONObject(text)
+                } catch (e: Exception) {
+                    throw HermesException("Response was not JSON")
+                }
+            }
+        } catch (e: HermesException) {
+            throw e
+        } catch (e: Exception) {
+            throw HermesException("Network error: ${e.javaClass.simpleName}")
+        }
+    }
+
+    private fun enc(value: String): String = Uri.encode(value)
+
     private fun execute(request: Request): String {
         try {
             http.newCall(request).execute().use { response ->
@@ -160,6 +244,13 @@ class HermesClient {
             // umbra-login handleRegister: the only non-validation rejection that means
             // signup is no longer open is 403 {"error":"Signup closed"}.
             return status == 403
+        }
+
+        private fun visibleDescription(data: JSONObject?): String {
+            if (data == null || !data.has("description") || data.isNull("description")) {
+                return "No description stored."
+            }
+            return data.optString("description").ifBlank { "No description stored." }
         }
 
         private fun errorSnippet(text: String): String {
@@ -223,3 +314,17 @@ sealed class LogoutResult {
     data object Unauthorized : LogoutResult()
     data class Failed(val message: String) : LogoutResult()
 }
+
+data class CompendiumBook(
+    val id: String,
+    val key: String,
+    val name: String,
+    val edition: String,
+    val entityCount: Int,
+)
+
+data class CompendiumKind(val kind: String, val count: Int)
+
+data class CompendiumHit(val id: String, val kind: String, val name: String)
+
+data class CompendiumPage(val entities: List<CompendiumHit>, val returned: Int, val hasMore: Boolean)

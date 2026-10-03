@@ -45,6 +45,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -105,15 +107,24 @@ data class UmbraUiState(
     val character: JSONObject? = null,
     val book: JSONObject? = null,
     val sheetTick: Int = 0,
-    val compendiumCategory: String = "items",
+    val compendiumCategory: String = "",
     val compendiumQuery: String = "",
     val compendiumId: String = "",
+    val compendiumBooks: List<CompendiumBook> = emptyList(),
+    val compendiumBookKey: String = "",
+    val compendiumKinds: List<CompendiumKind> = emptyList(),
+    val compendiumHits: List<CompendiumHit> = emptyList(),
+    val compendiumDetail: String = "",
+    val compendiumHasMore: Boolean = false,
+    val compendiumNextOffset: Int = 0,
+    val compendiumError: String = "",
 )
 
 class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     private val store = LocalStore(app)
     private val hermes = HermesClient()
     private var signingOut = false
+    private var compendiumSearch: Job? = null
     private val _state = MutableStateFlow(
         UmbraUiState(baseUrl = store.baseUrl()),
     )
@@ -127,10 +138,117 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
 
     fun showLogin() = _state.update { it.copy(accountScreen = "login", banner = "", password = "") }
     fun setDraft(value: String) = _state.update { it.copy(draft = value) }
-    fun selectTab(tab: String) = _state.update { it.copy(tab = tab) }
-    fun setQuery(value: String) = _state.update { it.copy(compendiumQuery = value, compendiumId = "") }
-    fun setCategory(value: String) = _state.update { it.copy(compendiumCategory = value, compendiumId = "") }
-    fun selectEntry(id: String) = _state.update { it.copy(compendiumId = id) }
+    fun selectTab(tab: String) {
+        _state.update { it.copy(tab = tab) }
+        if (tab == "compendium" && _state.value.compendiumBooks.isEmpty()) loadCompendiumBooks()
+    }
+
+    fun setQuery(value: String) {
+        _state.update { it.copy(compendiumQuery = value, compendiumId = "", compendiumDetail = "") }
+        compendiumSearch?.cancel()
+        compendiumSearch = viewModelScope.launch {
+            delay(350)
+            if (_state.value.compendiumBookKey.isNotBlank()) reloadCompendium(reset = true)
+        }
+    }
+
+    fun setCategory(value: String) {
+        _state.update { it.copy(compendiumCategory = value, compendiumId = "", compendiumDetail = "") }
+        viewModelScope.launch { reloadCompendium(reset = true) }
+    }
+
+    fun selectEntry(id: String) {
+        if (id.isBlank()) return
+        _state.update { it.copy(compendiumId = id, compendiumDetail = "") }
+        viewModelScope.launch {
+            val detail = compendiumCall { hermes.compendiumDetail(store.baseUrl(), store.sessionToken(), id) } ?: return@launch
+            _state.update { if (it.compendiumId == id) it.copy(compendiumDetail = detail) else it }
+        }
+    }
+
+    fun selectCompendiumBook(idOrKey: String) {
+        if (idOrKey.isBlank()) return
+        compendiumSearch?.cancel()
+        _state.update {
+            it.copy(
+                compendiumBookKey = idOrKey,
+                compendiumCategory = "",
+                compendiumId = "",
+                compendiumDetail = "",
+                compendiumHits = emptyList(),
+                compendiumKinds = emptyList(),
+                compendiumHasMore = false,
+                compendiumNextOffset = 0,
+                compendiumError = "",
+            )
+        }
+        viewModelScope.launch {
+            val kinds = compendiumCall { hermes.compendiumKinds(store.baseUrl(), store.sessionToken(), idOrKey) } ?: return@launch
+            if (_state.value.compendiumBookKey != idOrKey) return@launch
+            _state.update { it.copy(compendiumKinds = kinds) }
+            reloadCompendium(reset = true)
+        }
+    }
+
+    fun loadMoreCompendium() {
+        if (!_state.value.compendiumHasMore) return
+        viewModelScope.launch { reloadCompendium(reset = false) }
+    }
+
+    private fun loadCompendiumBooks() {
+        viewModelScope.launch {
+            val books = compendiumCall { hermes.compendiumBooks(store.baseUrl(), store.sessionToken()) } ?: return@launch
+            _state.update { it.copy(compendiumBooks = books, compendiumError = "") }
+        }
+    }
+
+    private suspend fun reloadCompendium(reset: Boolean) {
+        val snap = _state.value
+        val key = snap.compendiumBookKey
+        if (key.isBlank()) return
+        val offset = if (reset) 0 else snap.compendiumNextOffset
+        val page = compendiumCall {
+            hermes.compendiumEntities(
+                store.baseUrl(),
+                store.sessionToken(),
+                key,
+                snap.compendiumCategory,
+                snap.compendiumQuery.trim(),
+                offset,
+            )
+        } ?: return
+        if (_state.value.compendiumBookKey != key) return
+        _state.update {
+            it.copy(
+                compendiumHits = if (reset) page.entities else it.compendiumHits + page.entities,
+                compendiumHasMore = page.hasMore,
+                compendiumNextOffset = offset + page.returned,
+                compendiumError = "",
+            )
+        }
+    }
+
+    private suspend fun <T> compendiumCall(block: () -> T): T? {
+        if (store.sessionToken().isBlank()) {
+            missingSession()
+            return null
+        }
+        return try {
+            withContext(Dispatchers.IO) { block() }
+        } catch (e: HermesException) {
+            val message = e.message.orEmpty()
+            if (message == "HTTP 401" || message == "The session is missing.") missingSession()
+            else _state.update { it.copy(compendiumError = message.ifBlank { "Network error" }) }
+            null
+        }
+    }
+
+    private fun missingSession() {
+        store.clearSession()
+        _state.update {
+            it.copy(connected = false, busy = false, password = "", banner = "The session is missing.", pending = null)
+        }
+    }
 
     fun setAudience(audience: String) {
         if (audience !in setOf("umbra", "group", "area", "whisper")) return
@@ -820,35 +938,42 @@ private fun SheetScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mo
 
 @Composable
 private fun CompendiumScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Modifier) {
-    val book = state.book
-    val categories = listOf("species", "classes", "subclasses", "items", "monsters")
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Compendium", style = MaterialTheme.typography.headlineMedium, color = Gold)
         Text("Browse only", color = Faint)
+        if (state.compendiumError.isNotBlank()) Text(state.compendiumError, color = Color(0xFFE8EAF0))
         OutlinedTextField(state.compendiumQuery, model::setQuery, label = { Text("Search") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-            categories.forEach { key ->
-                FilterChip(selected = state.compendiumCategory == key, onClick = { model.setCategory(key) }, label = { Text(key) })
+            state.compendiumBooks.forEach { book ->
+                val ref = book.id.ifBlank { book.key }
+                val label = book.name.ifBlank { book.key.ifBlank { book.id } }
+                FilterChip(selected = state.compendiumBookKey == ref, onClick = { model.selectCompendiumBook(ref) }, label = { Text(label) })
             }
         }
-        val matches = remember(book, state.compendiumCategory, state.compendiumQuery) {
-            val array = book?.optJSONArray(state.compendiumCategory) ?: JSONArray()
-            val q = state.compendiumQuery.trim().lowercase()
-            (0 until array.length()).map { array.getJSONObject(it) }.filter { obj ->
-                q.isEmpty() || obj.optString("name").lowercase().contains(q) || obj.optString("id").lowercase().contains(q)
+        if (state.compendiumBookKey.isNotBlank()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                FilterChip(selected = state.compendiumCategory.isEmpty(), onClick = { model.setCategory("") }, label = { Text("all") })
+                state.compendiumKinds.forEach { kind ->
+                    FilterChip(selected = state.compendiumCategory == kind.kind, onClick = { model.setCategory(kind.kind) }, label = { Text(kind.kind) })
+                }
             }
         }
         LazyColumn(Modifier.weight(1f)) {
-            items(matches, key = { it.optString("id") + it.optString("name") }) { obj ->
+            items(state.compendiumHits, key = { it.id.ifBlank { it.name } + it.kind }) { hit ->
                 Column(
-                    Modifier.fillMaxWidth().clickable { model.selectEntry(obj.optString("id")) }.padding(vertical = 6.dp),
+                    Modifier.fillMaxWidth().clickable { model.selectEntry(hit.id) }.padding(vertical = 6.dp),
                 ) {
-                    Text(obj.optString("name"), color = Color(0xFFE8EAF0))
-                    Text(obj.optString("id"), color = Faint, style = MaterialTheme.typography.bodySmall)
-                    if (state.compendiumId == obj.optString("id")) {
-                        Text(obj.optString("description").ifBlank { "No description stored." }, color = Muted)
+                    Text(hit.name, color = Color(0xFFE8EAF0))
+                    Text(hit.id, color = Faint, style = MaterialTheme.typography.bodySmall)
+                    if (state.compendiumId == hit.id && hit.id.isNotBlank()) {
+                        Text(state.compendiumDetail.ifBlank { "No description stored." }, color = Muted)
                         Text("Read only. No edit, create, or delete.", color = Faint, style = MaterialTheme.typography.bodySmall)
                     }
+                }
+            }
+            if (state.compendiumHasMore) {
+                item {
+                    TextButton(onClick = { model.loadMoreCompendium() }) { Text("More") }
                 }
             }
         }
