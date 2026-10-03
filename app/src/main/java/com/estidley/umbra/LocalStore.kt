@@ -118,17 +118,53 @@ class LocalStore(private val context: Context) {
     }
 
     fun applyProposal(proposal: Proposal): String {
-        return when (proposal.target) {
-            "inventory" -> applyInventory(proposal.data)
-            "species" -> if (proposal.kind == "book") addEntity("species", proposal.data, "species")
-            else setSpecies(proposal.data)
-            "subclass" -> if (proposal.kind == "book") addEntity("subclasses", proposal.data, "subclass")
-            else setSubclass(proposal.data)
-            "monster" -> addEntity("monsters", proposal.data, "monster")
-            "encounter" -> addEncounter(proposal.data)
-            "sheet" -> mergeSheet(proposal.data)
-            else -> throw IllegalArgumentException("Unknown proposal target ${proposal.target}")
+        val clean = proposal.copy(data = stripHiddenLore(proposal.data))
+        return when (clean.target) {
+            "inventory" -> applyInventory(clean.data)
+            "species" -> if (clean.kind == "book") addEntity("species", clean.data, "species")
+            else setSpecies(clean.data)
+            "subclass" -> if (clean.kind == "book") addEntity("subclasses", clean.data, "subclass")
+            else setSubclass(clean.data)
+            "monster" -> addEntity("monsters", clean.data, "monster")
+            "encounter" -> addEncounter(clean.data)
+            "sheet" -> mergeSheet(clean.data)
+            else -> throw IllegalArgumentException("Unknown proposal target ${clean.target}")
         }
+    }
+
+    private fun stripHiddenLore(data: JSONObject): JSONObject {
+        val copy = JSONObject(data.toString())
+        stripHiddenLoreIn(copy)
+        return copy
+    }
+
+    private fun stripHiddenLoreIn(obj: JSONObject) {
+        val keys = obj.keys().asSequence().toList()
+        for (key in keys) {
+            if (isHiddenLoreKey(key)) {
+                obj.remove(key)
+                continue
+            }
+            when (val child = obj.opt(key)) {
+                is JSONObject -> stripHiddenLoreIn(child)
+                is JSONArray -> {
+                    for (i in 0 until child.length()) {
+                        val item = child.optJSONObject(i) ?: continue
+                        stripHiddenLoreIn(item)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun isHiddenLoreKey(key: String): Boolean {
+        val normalized = key.lowercase().replace("_", "").replace("-", "")
+        return normalized == "lore" ||
+            normalized == "loremarkdown" ||
+            normalized == "hiddenlore" ||
+            normalized == "gmlore" ||
+            normalized == "playerhiddenlore" ||
+            normalized.endsWith("loremarkdown")
     }
 
     private fun applyInventory(data: JSONObject): String {

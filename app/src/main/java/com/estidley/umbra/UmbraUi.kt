@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -114,7 +113,6 @@ data class UmbraUiState(
 class UmbraViewModel(app: Application) : AndroidViewModel(app) {
     private val store = LocalStore(app)
     private val hermes = HermesClient()
-    private val queue = ArrayDeque<Proposal>()
     private var signingOut = false
     private val _state = MutableStateFlow(
         UmbraUiState(baseUrl = store.baseUrl()),
@@ -157,7 +155,6 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
             when (result) {
                 LogoutResult.Success, LogoutResult.Unauthorized -> {
                     store.clearSession()
-                    queue.clear()
                     _state.update {
                         it.copy(
                             busy = false,
@@ -278,44 +275,41 @@ class UmbraViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 return@launch
             }
-            val parsed = SceneJson.parseAssistant(raw)
-            val shown = if (parsed == null) raw else parsed.text.ifBlank { raw }
-            val speaker = parsed?.speakerName ?: "Umbra"
-            if (parsed != null) {
-                queue.clear()
-                queue.addAll(parsed.proposals)
+            when (val reply = SceneJson.parseAssistant(raw)) {
+                AssistantReply.Incomplete -> {
+                    _state.update {
+                        it.copy(
+                            busy = false,
+                            lines = history + ChatLine("assistant", SceneJson.INCOMPLETE, "", SceneJson.INCOMPLETE),
+                            pending = null,
+                        )
+                    }
+                }
+                is AssistantReply.Complete -> {
+                    val turn = reply.turn
+                    val notes = mutableListOf<String>()
+                    for (proposal in turn.proposals) {
+                        notes += try {
+                            store.applyProposal(proposal)
+                        } catch (e: Exception) {
+                            "Could not apply"
+                        }
+                    }
+                    _state.update {
+                        it.copy(
+                            busy = false,
+                            lines = history + ChatLine("assistant", turn.text, turn.speakerName, raw),
+                            present = turn.present ?: emptyList(),
+                            locationName = turn.locationName ?: it.locationName,
+                            banner = if (notes.isEmpty()) "" else notes.joinToString("\n"),
+                            pending = null,
+                            character = store.character(),
+                            book = store.book(),
+                            sheetTick = it.sheetTick + 1,
+                        )
+                    }
+                }
             }
-            _state.update {
-                it.copy(
-                    busy = false,
-                    lines = history + ChatLine("assistant", shown, speaker, raw),
-                    present = parsed?.present ?: it.present,
-                    locationName = parsed?.locationName ?: it.locationName,
-                    pending = if (parsed == null) it.pending else queue.removeFirstOrNull(),
-                )
-            }
-        }
-    }
-
-    fun resolveProposal(accept: Boolean) {
-        val proposal = _state.value.pending ?: return
-        val note = if (!accept) {
-            "Discarded: ${proposal.summary}"
-        } else {
-            try {
-                store.applyProposal(proposal)
-            } catch (e: Exception) {
-                "Could not apply: ${e.message}"
-            }
-        }
-        _state.update {
-            it.copy(
-                banner = note,
-                pending = queue.removeFirstOrNull(),
-                character = store.character(),
-                book = store.book(),
-                sheetTick = it.sheetTick + 1,
-            )
         }
     }
 
@@ -501,16 +495,6 @@ fun UmbraRoot(model: UmbraViewModel = viewModel()) {
             onSurface = Color(0xFFE8EAF0),
         ),
     ) {
-        val pending = state.pending
-        if (pending != null && state.connected) {
-            AlertDialog(
-                onDismissRequest = { model.resolveProposal(false) },
-                title = { Text(if (pending.kind == "book") "Write to the book?" else "Write to the sheet?") },
-                text = { Text(pending.summary + "\n\n" + pending.target) },
-                confirmButton = { TextButton(onClick = { model.resolveProposal(true) }) { Text("Yes") } },
-                dismissButton = { TextButton(onClick = { model.resolveProposal(false) }) { Text("No") } },
-            )
-        }
         if (!state.connected) {
             if (state.accountScreen == "register") RegisterScreen(state, model) else LoginScreen(state, model)
             return@MaterialTheme
@@ -666,9 +650,11 @@ private fun ChatScreen(state: UmbraUiState, model: UmbraViewModel, modifier: Mod
                     }
                 } else {
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Portrait(Color(0xFF2A2F3D), 28)
-                            Text(line.speaker, color = Gold, style = MaterialTheme.typography.labelLarge)
+                        if (line.speaker.isNotBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Portrait(Color(0xFF2A2F3D), 28)
+                                Text(line.speaker, color = Gold, style = MaterialTheme.typography.labelLarge)
+                            }
                         }
                         Text(line.text, color = Color(0xFFE8EAF0))
                     }
