@@ -1,92 +1,59 @@
-# HANDOFF
+# Umbra — handoff
 
-Cross-AI board (Cursor ↔ Claude ↔ Grok ↔ Cloud Agent ↔ human). **Newest entry at the top.**
+_Last updated: 2026-11-13 2:13 PM CST (America/Chicago)_
 
-Use this when a different model or machine continues the work. Do not treat chat history as the source of truth.
+Umbra is Ethan Stidley's native Android client for a 5e character sheet and an in-app AI game master, also named Umbra. The phone is a client only: Kotlin, Jetpack Compose Material 3, minSdk 28, applicationId `com.estidley.umbra`, talking to the Umbra login bridge at the default base URL `https://umbra-login-production.up.railway.app` (overridable on the device). This repository does not host that bridge, the model server, or Aeternum VTT. The session token from `POST /api/login` or `POST /api/register` is stored on the device in EncryptedSharedPreferences; usernames and passwords are not saved; a legacy device API key is purged on save or sign-out; the master server key stays in the login bridge's Railway service variables and never enters this repo or the APK. The branch this handoff is maintained against, `local/umbra-android` at `49bc7c9`, was merged to `main` as [PR #1](https://github.com/estidley/umbra-aeternum/pull/1) on 2026-10-03 at 12:01 PM CDT and tagged `v0.1.0`. That slice already includes the Figma screens (Login, Chat, Character sheet, Compendium), a Beyond-style sheet on the `vtt.character.v1` shape copied from Aeternum VTT `character.ts` at `f0eafec`, username/password login and a first-account register screen, audience chat (`umbra` / `group` / `area` / `whisper`), automatic application of proposal writes (no yes/no popup), incomplete-reply handling, hidden-lore stripping on the phone, and a browse-only compendium over the login bridge's read-only book API. The same afternoon, further work was pushed on later `local/*` branches off `main`, through `v0.1.6` on `local/sheet-from-server` at `d94bab1` (5:37 PM CDT): chat history after login, the composer kept above the keyboard, a 60-second chat wait with a redownload of the saved thread, a typing indicator, openable sheet sections including inventory, numbered dice that post a confirmed roll to the server, bundled speaker portraits, and a server-sourced sheet for the mapped fields. None of that later work is on `local/umbra-android` or `main`, and none of those later branches have a pull request. HANDOFF.md had not been updated since the early 2026-10-03 table entries, which still said the Android app was unmerged and still described the superseded API-key login. This rewrite is the current board. Related login-bridge work (DM prompt, lore, sheet and roll endpoints, admin log) lives on the Railway service, not in this repo. The Aeternum VTT repo was not modified for this client.
 
-## How to write an entry
+## Ethan's instructions / goal
 
-Copy the block. Fill every field. Prepend — do not edit older rows except to mark `status` done/superseded.
+The goal is a native Android app that feels like the player's 5e sheet and lets Umbra run the game from the phone: the player is their character, Umbra is the DM, and the phone shows the sheet and the offers Umbra makes.
 
-```md
-## YYYY-MM-DD — short title
+- Native Kotlin on this repo, not Expo, not a website, not a Railway app in this slice. Do not add a backend here.
+- The product and the AI DM are called **Umbra** (never "Hermes" or "AI DM"). The VTT is **Aeternum VTT**. Some source identifiers still use the old name (`HermesClient.kt`, `HERMES_BASE_URL`, chat body `model` `"hermes"`); do not spread that name in copy or new docs.
+- Do not modify the Aeternum VTT repo from this work. Sheet shape stays aligned with `characterDocument` plus the `vtt.character.v1` file wrapper at Aeternum VTT `f0eafec`. Bundled book seed is SRD 5.1 only (`app/src/main/assets/srd/`, see `SOURCE.txt`); live browse uses the login bridge compendium API, which is not SRD-only.
+- Never commit secrets. Reference keys and admin credentials by path or variable name only (on-device session store; login-bridge Railway service variables, including `ADMIN_USERNAME` / `ADMIN_PASSWORD`). Cleartext HTTP is allowed in `network_security_config.xml` so a local login bridge can be reached.
+- Do not merge, and do not push to `main`, unless Ethan says so. An agent saying he approved does not count. He said "Merge every to main" on 2026-10-03 and then "Wait"; nothing after PR #1 was merged.
+- Signup is first-account only, then closed (`POST /api/register`; the app shows "Signup is closed." when the bridge says so).
+- Chat replies must include speaker (`name`, `id`, `portrait` or null), location (`name`, `image` or null), and present. If any of that is missing, show exactly "The reply was incomplete." Do not invent a speaker or a roster. Model-supplied portraits and location images stay null until a real image source exists.
+- Umbra may write inventory, species, subclasses, creatures, encounters, and sheet fields without a yes/no popup. The phone applies those proposals itself and must not show lore markdown or other hidden-lore keys to the player. Lore is DM-only reference on the login bridge: an outline, not law; Umbra may add to it and must not invent lore.
+- After 2026-10-03 5:32 PM CDT, confirmed skill/check rolls POST `/api/chat/roll` with check, mode, result, character, and expression. The chat line is `{character} rolled {check}, {expression}` (for example `Laithe rolled Stealth, 1d20+3=14`). The die stays up until OK. Umbra uses that number and continues. Do not ask the player to type the result, and do not roll a second time. Damage and loose dice do not call the server.
+- The server sheet is the source of truth for the fields the bridge actually stores. On `local/sheet-from-server`, `GET /api/chat/sheet` runs on startup, after login, when the sheet tab opens, and after a chat reply; a successful GET overwrites the cached `character.json` for the mapped fields. Failed GET or PATCH shows exactly "Could not apply" and keeps the last good sheet. Inventory is omitted from the client PATCH until the inventory JSON shape is provided; do not invent it.
+- Ethan's longer plan, stated 2026-10-03 and not fully built: Umbra owns the whole sheet. Tools on the login bridge, called with the session (never a key on the phone), should set sheet fields, add or remove inventory, equip or unequip, spend or restore spell slots, and use an attack. In combat, Umbra should offer buttons (initiative, action, Attack, then Damage if it hits) instead of a paragraph. The phone reloads the server sheet after every change.
 
-| Field | Value |
-| --- | --- |
-| Date | YYYY-MM-DD |
-| From | cursor / claude / grok / cloud-agent / ethan |
-| To | cursor / claude / grok / cloud-agent / ethan / any |
-| Status | open / blocked / done / note |
-| Phase | A1 (or —) |
-| Message | What landed, what is next, what must not be re-litigated. Link decisions/CURRENT or a changelog heading. |
-```
+## Checklist
 
-Keep messages short. Decisions live in `decisions/`, not here.
+### Done
 
----
+- [x] **2026-09-17–2026-09-20.** This repo started as the `estidley/project-playbook` template (PLAN, decisions A1–D4, Railway + Resend stubs). Those process docs are still in the tree and still read like a web app. They are not the product spec for this client.
+- [x] **2026-10-03, 1:36 AM–11:49 AM CDT — `local/umbra-android` @ `49bc7c9` (also the tree of `main` / `v0.1.0`).** Native client with the four Figma screens in file [`6dc6rt1M8axiCyLi5TGAsb`](https://www.figma.com/design/6dc6rt1M8axiCyLi5TGAsb), page Screens, plus Beyond-style sheet frames (header, saves, dice, sections, skills, actions, reactions, inventory, spells). No Beyond login, no bottom nav, no "Edit on website." Login is base URL + username + password, `GET /health`, `POST /api/login`, session Bearer on chat and compendium, sign-out revokes via `POST /api/logout`. First-account `POST /api/register`. Chat audiences and proposal fence as locked in `SceneJson.kt`. Writes apply automatically. Incomplete replies show "The reply was incomplete." Compendium browses `GET /api/compendium/books` (deduped) and related entity routes. Image generation / Google API remains a visible "not connected yet" stub. Debug APK only. [PR #1](https://github.com/estidley/umbra-aeternum/pull/1) merged to `main` at 12:01 PM CDT; release [v0.1.0](https://github.com/estidley/umbra-aeternum/releases/tag/v0.1.0).
+- [x] **2026-10-03, login-bridge (not this repo).** Server login, chat proxy, DM instruction set, lore files (52 markdown files loaded under the lore heading; prompt version `2026-10-03-lore-v3`), read-only compendium, `GET|PATCH /api/chat/sheet`, `POST /api/chat/roll`, and an admin-only log at `GET /api/admin/log`. A first player account was created during the Oct 3 test, so new signup should now be closed. Prompt versions also include `2026-10-03-dm-v2`, `2026-10-03-roll-auto-v1`, and `2026-10-03-sheet-v1`.
+- [x] **2026-10-03, 12:40 PM–12:41 PM CDT — `v0.1.2` / `local/chat-history` @ `26d3a15`, not on `main` or `local/umbra-android`.** Chat history loads after login and shows in order (`GET /api/chat/history`). Composer stays above the software keyboard. [v0.1.2](https://github.com/estidley/umbra-aeternum/releases/tag/v0.1.2). `v0.1.1` / `local/chat-composer-ime` @ `332dade` is a dead-end sibling with the IME fix only; the IME fix is already in `v0.1.2` and later.
+- [x] **2026-10-03, 2:44–2:49 PM CDT — `v0.1.3` / `local/chat-typing` @ `8fcecc3`, not on `main` or `local/umbra-android`.** Waits 60 seconds for a chat reply (`local/chat-read-timeout` @ `b1cf230`, untagged). Redownload replaces the thread with the saved server history. "Umbra is typing" with animated dots while a reply is in flight. [v0.1.3](https://github.com/estidley/umbra-aeternum/releases/tag/v0.1.3).
+- [x] **2026-10-03, 4:14 PM CDT — `v0.1.4` / `local/sheet-sections-scroll` @ `9b28f89`, not on `main` or `local/umbra-android`.** Sheet sections open as real pages, including inventory. In-app roll popup. Umbra stays purple in the bundled Hand Me Down font; other speakers keep a color by id. One bubble per beat when the body is a JSON list of speaker and text. [v0.1.4](https://github.com/estidley/umbra-aeternum/releases/tag/v0.1.4).
+- [x] **2026-10-03, 5:32 PM CDT — `v0.1.5` / `local/real-dice-portraits` @ `b907ed3`, not on `main` or `local/umbra-android`.** Numbered dice stay up until OK, then the math line is posted and Umbra continues. Bundled portraits for Aldric (older elf), Laithe, Oric, Rin, Umbra, and Valdis under `app/src/main/assets/portraits/`. No royal set. Combat is still the existing roll popup; there is no separate combat state machine. [v0.1.5](https://github.com/estidley/umbra-aeternum/releases/tag/v0.1.5).
+- [x] **2026-10-03, 5:37 PM CDT — `v0.1.6` / `local/sheet-from-server` @ `d94bab1`, not on `main` or `local/umbra-android`. Latest Android tip.** `GET /api/chat/sheet` as described above. PATCH sends `{"sheet":{...}}` with only `character_name`, `class`, `subclass`, `species`, `level`, `hp`, `max_hp`, and `ac`, and only when a proposal changed one of those. Inventory is not in the PATCH. `versionName` in Gradle is still `0.1.0`. [v0.1.6](https://github.com/estidley/umbra-aeternum/releases/tag/v0.1.6).
+- [x] **2026-11-13, 2:13 PM CST.** This file rewritten in the standard handoff form on `handoff-2026-11-13`, off `local/umbra-android`. Product work since 2026-10-03 was not redone; later Android commits already on GitHub were inventoried only.
 
-## 2026-10-03 — Beyond-style character sheet
+### Left
 
-| Field | Value |
-| --- | --- |
-| Date | 2026-10-03 |
-| From | Ched |
-| To | Webb + Fred |
-| Status | open |
-| Phase | A1 |
-| Message | Character sheet frames on Figma page Screens replace the old sheet: header, saves, dice, sections, skills, actions, reactions, inventory, spells. Native sheet uses vtt.character.v1. No Beyond login, no bottom nav, no Edit on website. Not merged. |
+- [ ] **Merge decision (Ethan).** `local/sheet-from-server` (`v0.1.6`) and the earlier `local/*` steps are on GitHub with releases, but have no PRs and are not on `main` or `local/umbra-android`. Ethan stopped a "merge everything" request on 2026-10-03. Do not merge them unless he says so. A checkout of `local/umbra-android` or `main` is the older `v0.1.0` client: no server chat history, no typing indicator, no openable inventory page, no numbered dice or bundled portraits, and no server sheet sync.
+- [ ] **Inventory sync.** Client PATCH still omits inventory because the login-bridge inventory JSON shape was never given to the Android work. Until that shape is provided, inventory stays on the phone even on `v0.1.6`.
+- [ ] **Full sheet control (planned 2026-10-03, not built).** Equip/unequip, spend or restore spell slots, use attacks from the sheet, and combat offer-buttons (initiative, action, Attack, Damage). No MCP-style tool layer on the phone. Failed tools should show "Could not apply" and not pretend a save happened. Buttons should appear only when a roll or a sheet change is actually on offer.
+- [ ] **Scene pictures and generated portraits.** Bundled portraits cover the first named set on `v0.1.5+`. Model-supplied scene images and NPC portraits stay blank until Ethan provides a Google image key or another source. Image generation stays disconnected. The royal portrait set was not included.
+- [ ] **Chat memory.** The login-bridge / new model path was left without memory on purpose. Not started in this client.
+- [ ] **Release packaging.** Every published APK is debug. There is no signed release build. Gradle `versionName` was never bumped past `0.1.0`.
+- [ ] **Stale process docs.** `PLAN.md`, `README.md`, `decisions/CURRENT.md`, and the 2026-10-03 changelog row still describe the playbook template and an early API-key / "not Figma-driven" snapshot. Updating them was out of scope for this handoff-only change.
+- [ ] **A later play test** of the `v0.1.6` APK, including server sheet reloads and confirmed rolls, has not been recorded here since 2026-10-03.
 
-## 2026-10-03 — Umbra screens in Figma, client matched
+## Setup, paths, and locked details
 
-| Field | Value |
-| --- | --- |
-| Date | 2026-10-03 |
-| From | Ched |
-| To | Webb + Fred |
-| Status | open |
-| Phase | A1 |
-| Message | Four frames are in Figma file 6dc6rt1M8axiCyLi5TGAsb page Screens (Login, Chat, Character sheet, Compendium). Native client on local/umbra-android matches them. Login is base URL plus device API key and GET /health. Chat sends audience umbra/group/area/whisper and parses the assistant fence (text, speaker, location, present, proposals). Sheet covers the VTT document sections. Compendium is browse-only SRD seed. Not merged. VTT repo not modified. No Google key. |
+- **Repo:** https://github.com/estidley/umbra-aeternum (private).
+- **Build machine and checkout used on 2026-10-03:** DESKTOP-KAAGPFG, `C:\temp\umbra-aeternum`. Debug APK path: `C:\temp\umbra-aeternum\app\build\outputs\apk\debug\app-debug.apk`. Build with `assembleDebug`.
+- **Published debug APKs:** https://github.com/estidley/umbra-aeternum/releases (`v0.1.0` through `v0.1.6`).
+- **Figma:** https://www.figma.com/design/6dc6rt1M8axiCyLi5TGAsb (page Screens).
+- **Default base URL** (BuildConfig `HERMES_BASE_URL`): `https://umbra-login-production.up.railway.app`. Overridable on the login screen. Health is `GET /health`.
+- **Login-bridge routes:** On `local/umbra-android` / `v0.1.0`, the client uses `GET /health`, `POST /api/login`, `POST /api/register`, `POST /api/logout`, `POST /v1/chat/completions`, and the read-only `GET /api/compendium/books` (plus book detail, entities, and entity detail). Later unmerged builds add `GET /api/chat/history` (`v0.1.2+`), `POST /api/chat/roll` (`v0.1.5+`), and `GET|PATCH /api/chat/sheet` (`v0.1.6`). Session Bearer is required except for health, login, and register. Sheet aliases exist on the bridge (`/api/umbra/chat/sheet`, `/api/login/chat/sheet`) but the `v0.1.6` client calls `/api/chat/sheet`.
+- **On-device files:** `character.json` in the app files dir; encrypted session prefs on the device. Do not log or commit those values.
+- **Open GitHub issues:** none. Historical PR: #1 only, merged. This handoff change is a new PR into `local/umbra-android` and must not be merged without Ethan.
 
-## 2026-10-03 — Umbra Android client
-
-| Field | Value |
-| --- | --- |
-| Date | 2026-10-03 |
-| From | Ched |
-| To | Webb + Fred |
-| Status | open |
-| Phase | A1 |
-| Message | Native Umbra client on `local/umbra-android` (not merged). Debug APK only. No Railway, no Hermes server, no Expo. Local display-name login (nothing sent). Hermes: GET /health and POST /v1/chat/completions with Bearer key, body model `hermes` plus session messages (plus one local system line that describes the proposal fence). Assistant text is choices[0].message.content. Proposals are a fenced json block with proposals[].kind sheet or book, summary, target inventory/species/subclass/monster/encounter/sheet, and data. Yes is required before a write. Sheet shape from Aeternum-VTT character.ts at f0eafec; book seed is content/srd-5.1 only. VTT repo was not modified. Image generation / Google API is a not-connected stub. |
-
-## 2026-09-20 — app-web default shifted to Railway + Resend
-
-| Field | Value |
-| --- | --- |
-| Date | 2026-09-20 |
-| From | cloud-agent |
-| To | any |
-| Status | done |
-| Phase | A1 (template; no product cloned) |
-| Message | Playbook defaults now match how Bragline ships: Railway (app + Postgres + `/data` volume) and Resend HTTPS API (`RESEND_API_KEY`, `EMAIL_FROM`). Azure ACA / Flexible Server / ACS / Key Vault are superseded. Azure Blob is dormant/optional. Env names match Railway, not Azure. Do not copy Bragline app source. See `decisions/CHANGELOG.md` 2026-09-20 and `stack/APP-WEB.md`. |
-
-## 2026-09-17 — Template filled (process + stubs)
-
-| Field | Value |
-| --- | --- |
-| Date | 2026-09-17 |
-| From | cursor |
-| To | any |
-| Status | done |
-| Phase | A1 (placeholder until a product is cloned) |
-| Message | `estidley/project-playbook` now has PLAN, decisions/A1–D4, stack-by-kind, GitHub+Figma connectors, Docker/env/scripts stubs. Not an app. GitHub **template flag could not be set** (403); Ethan: Settings → General → Template repository. Next: merge this PR, enable the flag, Use this template for a real product, start A1. |
-
-## 2026-09-17 — How to use this board
-
-| Field | Value |
-| --- | --- |
-| Date | 2026-09-17 |
-| From | playbook |
-| To | any |
-| Status | note |
-| Phase | — |
-| Message | This file is the cross-AI board, not the product spec. After cloning the template: set Name + Deployment kind in PLAN.md and decisions/CURRENT.md. Incoming AI reads PLAN → CURRENT → **this newest entry**, then works the current phase. Prepend a real handoff row when you stop (what landed, what’s next, what is locked). Do not paste chat transcripts. |
+When this file needs another update, keep this form: a current opening paragraph, Ethan's instructions and the goal, then a done/left checklist with America/Chicago dates. Do not go back to the old prepend-a-table board, and do not redo research that is already written here.
